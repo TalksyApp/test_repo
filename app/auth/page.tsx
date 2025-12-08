@@ -6,7 +6,6 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, User as UserIcon, Lock, Mail, LucideIcon } from "lucide-react"
 
-import LiveBackground from "@/components/auth/live-background"
 import PhoneMockup from "@/components/auth/phone-mockup"
 import WelcomeHero from "@/components/auth/welcome-hero"
 
@@ -187,11 +186,10 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-black font-sans selection:bg-indigo-500/30 overflow-hidden text-zinc-100">
+    <div className="flex min-h-screen w-full bg-transparent font-sans selection:bg-indigo-500/30 overflow-hidden text-zinc-100">
 
       {/* --- LEFT SIDE: DYNAMIC HERO (Desktop Only) --- */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center bg-[#050505] overflow-hidden transition-all duration-700">
-        <LiveBackground />
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center bg-transparent overflow-hidden transition-all duration-700">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 via-transparent to-black/50 pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col items-center w-full h-full justify-center">
@@ -214,7 +212,7 @@ export default function AuthPage() {
       </div>
 
       {/* --- RIGHT SIDE: AUTH FORM --- */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative bg-black">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative bg-black/60 backdrop-blur-md">
         <div className="absolute inset-0 lg:hidden bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 pointer-events-none"></div>
 
         <div className="w-full max-w-md space-y-6">
@@ -251,7 +249,7 @@ export default function AuthPage() {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-zinc-900"></div>
             </div>
-            <div className="relative bg-black px-4 text-xs text-zinc-600 font-medium uppercase tracking-wider">
+            <div className="relative bg-transparent px-4 text-xs text-zinc-600 font-medium uppercase tracking-wider">
               Or continue with email
             </div>
           </div>

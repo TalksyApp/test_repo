@@ -44,7 +44,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   if (status === "loading" || loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-screen items-center justify-center bg-transparent">
         <div className="text-center">
           <div className="text-2xl font-bold text-foreground mb-2">TALKSY</div>
           <div className="text-foreground/60">Loading...</div>
@@ -62,7 +62,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isOnChatPage = pathname === "/chat"
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden relative">
+    <div className="flex h-screen w-full bg-transparent overflow-hidden relative">
       {/* Fixed Sidebar (Glass Dock) handles its own positioning */}
       <Navigation currentUser={currentUser} />
 

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Outfit } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
+import { BackgroundProvider } from "@/components/background-provider"
 import "./globals.css"
 
 const outfit = Outfit({ weight: ["300", "400", "500", "600", "700", "800"], subsets: ["latin"] })
@@ -27,7 +28,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.className} antialiased bg-black text-white`}>
         <Providers>
-          {children}
+          <BackgroundProvider>
+            {children}
+          </BackgroundProvider>
         </Providers>
         <Analytics />
       </body>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { X, Zap, Hash } from 'lucide-react';
+import { X, Zap } from 'lucide-react';
 
 interface CreateModalProps {
     isOpen: boolean;
@@ -11,31 +11,20 @@ interface CreateModalProps {
 
 export default function CreateModal({ isOpen, onClose, onPost }: CreateModalProps) {
     const [text, setText] = useState("");
-    const [tags, setTags] = useState<string[]>([]);
-    const [showTagInput, setShowTagInput] = useState(false);
-    const [tagInput, setTagInput] = useState("");
+    // Tags state removed as per request
 
     // --- THE VOLTAGE STATE ---
     const [isBoosted, setIsBoosted] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleAddTag = () => {
-        if (tagInput.trim() && tags.length < 3) {
-            setTags([...tags, tagInput.trim()]);
-            setTagInput("");
-            if (tags.length === 2) setShowTagInput(false);
-        }
-    };
-
     const handleSubmit = () => {
         if (text.trim()) {
-            // Send text, tags, and the boost status
-            onPost(text, tags, { isBoosted });
+            // Send text, empty tags, and the boost status
+            onPost(text, [], { isBoosted });
 
             // Reset
             setText("");
-            setTags([]);
             setIsBoosted(false);
             onClose();
         }
@@ -79,39 +68,8 @@ export default function CreateModal({ isOpen, onClose, onPost }: CreateModalProp
                             placeholder="What is happening in the void?"
                             className="w-full h-28 bg-transparent text-xl text-white placeholder-gray-600 outline-none resize-none border-none p-0 leading-relaxed font-medium"
                         />
-
-                        {/* Tags Display */}
-                        {tags.length > 0 && (
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                                {tags.map((tag, index) => (
-                                    <span key={index} className="bg-[#1a1a1a] text-gray-300 border border-white/10 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-2 group">
-                                        #{tag}
-                                        <button onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:text-red-400 transition-colors"><X size={12} /></button>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </div>
-
-                {/* Tag Input Area (Slide Down) */}
-                {showTagInput && (
-                    <div className="mb-4 ml-16 flex gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                        <div className="flex-1 bg-[#111] border border-white/10 rounded-xl flex items-center px-3 focus-within:border-indigo-500 transition-colors">
-                            <span className="text-gray-500 mr-1">#</span>
-                            <input
-                                type="text"
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                                placeholder="Tag (e.g. Design)"
-                                className="bg-transparent text-white text-sm py-2.5 outline-none w-full font-medium"
-                                autoFocus
-                            />
-                        </div>
-                        <button onClick={handleAddTag} className="bg-white text-black px-4 rounded-xl font-bold text-xs hover:bg-gray-200">Add</button>
-                    </div>
-                )}
 
                 {/* Footer Toolbar */}
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
@@ -125,15 +83,6 @@ export default function CreateModal({ isOpen, onClose, onPost }: CreateModalProp
                         >
                             <Zap size={16} fill={isBoosted ? "currentColor" : "none"} />
                             {isBoosted ? 'BOOST ACTIVE' : 'Boost'}
-                        </button>
-
-                        {/* 2. HASH (TAGS) */}
-                        <button
-                            onClick={() => setShowTagInput(!showTagInput)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${showTagInput || tags.length > 0 ? 'bg-indigo-500/20 text-indigo-400' : 'hover:bg-white/5 hover:text-white'}`}
-                            title="Add Tags"
-                        >
-                            <Hash size={18} />
                         </button>
                     </div>
 

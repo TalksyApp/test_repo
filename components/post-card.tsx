@@ -1,10 +1,10 @@
 "use client"
 
 import React from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, CheckCircle2, Zap } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, CheckCircle2, Zap, LucideIcon } from 'lucide-react';
 
 interface PostCardProps {
-  post: any; // Using any for now to facilitate integration
+  post: any; // Using any for compatibility with existing data structure
   onUserClick?: (post: any) => void;
   currentUser?: any;
   onLike?: (id: string) => void;
@@ -21,6 +21,24 @@ const Avatar = ({ char, isBoosted }: { char: string, isBoosted: boolean }) => (
   </div>
 );
 
+interface BtnProps {
+  icon: LucideIcon;
+  count?: number;
+  color: string;
+  onClick?: () => void;
+  isActive?: boolean;
+}
+
+const Btn: React.FC<BtnProps> = ({ icon: Icon, count, color, onClick, isActive }) => (
+  <button
+    onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+    className={`flex items-center gap-1.5 transition-all group/btn ${isActive ? 'text-pink-500' : `text-gray-500 ${color}`}`}
+  >
+    <Icon size={18} className="group-hover/btn:scale-110 transition-transform" fill={isActive ? 'currentColor' : 'none'} />
+    {count !== undefined && <span className="text-xs font-medium">{count}</span>}
+  </button>
+);
+
 export default function PostCard({ post, onUserClick, currentUser, onLike, onClick }: PostCardProps) {
   // Dynamic Styles based on "Boost"
   const isBoosted = post.isPromoted || post.isBoosted; // Handle both naming conventions
@@ -35,23 +53,28 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
   const isLiked = post.isLikedByUser || false;
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className={`bg-[#0a0a0a]/80 backdrop-blur-sm border rounded-[24px] p-5 relative overflow-hidden transition-all duration-300 group cursor-pointer
+      className={`bg-[#0a0a0a]/80 backdrop-blur-sm border rounded-3xl p-5 relative overflow-hidden transition-all duration-300 group cursor-pointer
       ${isBoosted
-        ? 'border-yellow-500/40 shadow-[0_0_40px_rgba(234,179,8,0.05)] hover:border-yellow-500/60'
-        : 'border-white/10 hover:border-white/20 hover:bg-[#111]'}`
-    }>
+          ? 'border-yellow-500/40 shadow-[0_0_40px_rgba(234,179,8,0.05)] hover:border-yellow-500/60'
+          : 'border-white/10 hover:border-white/20 hover:bg-[#111] shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_50px_rgba(255,255,255,0.05)]'}`
+      }>
+
+      {/* --- SIDE GLOW ACCENT --- */}
+      {!isBoosted && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(99,102,241,0.6)] opacity-80 group-hover:opacity-100 group-hover:w-1.5 transition-all duration-300"></div>
+      )}
 
       {/* Header */}
-      <div className="flex justify-between items-start mb-3">
+      <div className="flex justify-between items-start mb-2">
         <div
           className="flex gap-3 items-center cursor-pointer"
           onClick={(e) => { e.stopPropagation(); if (onUserClick) onUserClick({ ...post, author: authorName, handle, avatar: avatarChar }); }}
         >
           <Avatar char={avatarChar} isBoosted={isBoosted} />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div className={`font-bold text-base transition-colors ${isBoosted ? 'text-yellow-100' : 'text-white group-hover:text-indigo-400'}`}>{authorName}</div>
               {/* Verified Badge */}
               <CheckCircle2 size={12} className="text-blue-500" fill="black" />
@@ -71,7 +94,7 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
       </div>
 
       {/* Content */}
-      <p className="text-base text-gray-100 font-light leading-relaxed mb-3 pl-[52px]">
+      <p className="text-[15px] text-gray-200 font-normal leading-relaxed mb-3 pl-[52px]">
         {post.content}
       </p>
 
@@ -79,7 +102,7 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
       {post.tags && post.tags.length > 0 && (
         <div className="pl-[52px] mb-3 flex gap-2 flex-wrap">
           {post.tags.map((tag: string, i: number) => (
-            <span key={i} className="text-[10px] font-bold text-gray-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+            <span key={i} className="text-[11px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded-md border border-white/5 hover:text-indigo-400 transition-colors cursor-pointer">
               #{tag}
             </span>
           ))}
@@ -88,7 +111,7 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
 
       {/* Buttons */}
       <div className="flex items-center justify-between pl-[52px] pt-3 border-t border-white/5">
-        <div className="flex gap-5">
+        <div className="flex gap-6">
           <Btn icon={Heart} count={likesCount} color="hover:text-pink-500" isActive={isLiked} onClick={() => onLike && onLike(post.id)} />
           <Btn icon={MessageCircle} count={commentsCount} color="hover:text-blue-400" />
           <Btn icon={Share2} color="hover:text-green-400" />
@@ -97,9 +120,3 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
     </div>
   );
 }
-
-const Btn = ({ icon: Icon, count, color, onClick, isActive }: { icon: any, count?: number, color: string, onClick?: () => void, isActive?: boolean }) => (
-  <button onClick={(e) => { e.stopPropagation(); onClick && onClick(); }} className={`flex items-center gap-1.5 transition-all ${isActive ? 'text-pink-500' : `text-gray-500 ${color}`}`}>
-    <Icon size={18} fill={isActive ? 'currentColor' : 'none'} /> {count !== undefined && <span className="text-xs font-medium">{count}</span>}
-  </button>
-);

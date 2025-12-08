@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { storage, type User } from "@/lib/storage"
 
+import { BackgroundProvider, useBackground } from "@/components/background-provider"
+
 interface SettingsPageProps {
     currentUser: User
     onNavigate: (page: string) => void
@@ -14,7 +16,8 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ currentUser, onNavigate, onLogout }: SettingsPageProps) {
-    const [isPureBlack, setIsPureBlack] = useState(false);
+    const { isLiveBackgroundEnabled, toggleBackground } = useBackground()
+    // Local state for other settings
     const [settings, setSettings] = useState({
         notifications: true,
         sound: false,
@@ -24,12 +27,6 @@ export default function SettingsPage({ currentUser, onNavigate, onLogout }: Sett
 
     const toggle = (key: keyof typeof settings) => {
         setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const toggleTheme = () => {
-        setIsPureBlack(!isPureBlack);
-        // In a real app, this would trigger a theme change in a context or body class
-        document.body.setAttribute('data-theme', !isPureBlack ? 'pure' : 'nebula');
     };
 
     const handleLogout = () => {
@@ -92,9 +89,9 @@ export default function SettingsPage({ currentUser, onNavigate, onLogout }: Sett
                         <ToggleRow
                             icon={Palette}
                             label="App Theme"
-                            sublabel={isPureBlack ? "Active: Void Black (OLED)" : "Active: Deep Nebula"}
-                            isOn={isPureBlack}
-                            onClick={toggleTheme}
+                            sublabel={!isLiveBackgroundEnabled ? "Active: Void Black (OLED)" : "Active: Deep Nebula"}
+                            isOn={!isLiveBackgroundEnabled}
+                            onClick={toggleBackground}
                         />
 
                         <div className="h-px w-full bg-white/5"></div>
