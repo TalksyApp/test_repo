@@ -35,27 +35,27 @@ export default function ExplorePage({ currentUser, selectedTopic, onTopicSelect,
   }
 
   return (
-    <div className="w-full pt-10 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-700 px-6 overflow-y-auto h-full">
+    <div className="w-full pt-10 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-700 px-4 md:px-6 overflow-y-auto h-full">
 
-      <div className="mb-12 flex justify-between items-end">
+      <div className="mb-8 md:mb-12 flex justify-between items-end">
         <div>
-          <h1 className="text-5xl font-display font-black text-white mb-2 tracking-tight">Explore</h1>
-          <p className="text-gray-500 text-lg font-medium">Find your frequency in the noise.</p>
+          <h1 className="text-4xl md:text-5xl font-display font-black text-white mb-2 tracking-tight">Explore</h1>
+          <p className="text-gray-500 text-base md:text-lg font-medium">Find your frequency in the noise.</p>
         </div>
         <button
           onClick={onNavigateToGroups}
-          className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full font-medium transition-colors"
+          className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full font-medium transition-colors text-sm md:text-base hidden md:block"
         >
           Group Chats
         </button>
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-16 group">
+      <div className="relative mb-8 md:mb-16 group">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-500"></div>
-        <div className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center px-6 py-5 transition-all group-focus-within:border-white/30">
+        <div className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center px-4 md:px-6 py-4 md:py-5 transition-all group-focus-within:border-white/30">
           <Search className="text-gray-500 group-focus-within:text-white transition-colors mr-4" size={24} />
-          <input type="text" placeholder="Search users, topics, or keywords..." className="w-full bg-transparent text-xl text-white placeholder-gray-600 outline-none border-none font-medium" />
+          <input type="text" placeholder="Search users, topics..." className="w-full bg-transparent text-lg md:text-xl text-white placeholder-gray-600 outline-none border-none font-medium" />
         </div>
       </div>
 

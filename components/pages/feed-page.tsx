@@ -194,15 +194,15 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
 
   return (
     <>
-      <div className="w-full pt-10 pb-32 px-8 animate-in fade-in duration-500 overflow-y-auto h-full">
+      <div className="w-full pt-6 md:pt-10 pb-32 px-4 md:px-8 animate-in fade-in duration-500 overflow-y-auto h-full">
 
         {/* HEADER */}
-        <div className="mb-12 flex flex-col items-start w-full max-w-[1200px]">
-          <h1 className="text-6xl font-display font-black text-white mb-2 tracking-tighter flex items-center gap-3">
-            {topic && <span className="text-gray-600 text-4xl">#</span>}
+        <div className="mb-8 md:mb-12 flex flex-col items-start w-full max-w-[1200px]">
+          <h1 className="text-4xl md:text-6xl font-display font-black text-white mb-2 tracking-tighter flex items-center gap-3">
+            {topic && <span className="text-gray-600 text-3xl md:text-4xl">#</span>}
             {topic ? topic : "Feed"}
           </h1>
-          <p className="text-gray-500 text-xl font-medium">
+          <p className="text-gray-500 text-lg md:text-xl font-medium">
             {topic ? `Exploring transmissions about ${topic}.` : "Transmissions from the void."}
           </p>
         </div>
@@ -245,7 +245,7 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
 
       <button
         onClick={() => setIsCreateModalOpen(true)}
-        className="absolute bottom-8 right-8 w-16 h-16 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform z-50"
+        className="absolute bottom-28 right-6 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform z-50"
       >
         <Plus size={32} />
       </button>

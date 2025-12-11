@@ -39,8 +39,8 @@ export default function Navigation({ currentUser }: NavigationProps) {
   const pathname = usePathname()
 
   return (
-    // GLASS DOCK STYLE
-    <div className="fixed left-6 top-1/2 -translate-y-1/2 bg-[#0c0c0e]/60 backdrop-blur-xl border border-white/10 rounded-[40px] py-6 px-3 flex flex-col gap-5 items-center z-50 w-[80px] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+    // GLASS DOCK STYLE - RESPONSIVE
+    <div className="fixed z-50 bottom-4 left-4 right-4 h-20 bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 rounded-[32px] flex flex-row justify-around items-center px-2 shadow-[0_10px_40px_rgba(0,0,0,0.5)] md:fixed md:left-6 md:top-1/2 md:-translate-y-1/2 md:right-auto md:bottom-auto md:w-[80px] md:h-auto md:flex-col md:gap-5 md:py-6 md:rounded-[40px] md:px-3">
       <NavItem href="/" icon={Home} pathname={pathname} />
       <NavItem href="/explore" icon={Compass} pathname={pathname} />
       <NavItem href="/notifications" icon={Bell} pathname={pathname} />
@@ -49,14 +49,14 @@ export default function Navigation({ currentUser }: NavigationProps) {
       {/* ADMIN LINK (Only for Admin) */}
       {currentUser?.email === 'admin@talksy.app' && (
         <>
-          <div className="h-px w-8 bg-white/10 my-2"></div> {/* Admin Divider */}
+          <div className="hidden md:block h-px w-8 bg-white/10 my-2"></div> {/* Desktop Divider */}
           <NavItem href="/admin" icon={Shield} pathname={pathname} />
         </>
       )}
 
-      <div className="h-px w-8 bg-white/10 my-2"></div> {/* Divider */}
+      <div className="hidden md:block h-px w-8 bg-white/10 my-2"></div> {/* Desktop Divider */}
 
-      <div className="mt-auto">
+      <div className="md:mt-auto">
         <NavItem href="/settings" icon={Settings} pathname={pathname} />
       </div>
     </div>

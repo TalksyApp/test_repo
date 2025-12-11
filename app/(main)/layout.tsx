@@ -69,7 +69,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Fixed Sidebar (Glass Dock) handles its own positioning */}
       {!hideSidebar && <Navigation currentUser={currentUser} />}
 
-      <main className={`flex-1 relative overflow-hidden flex flex-col ${!hideSidebar ? 'pl-32' : ''}`}>
+      <main className={`flex-1 relative overflow-hidden flex flex-col ${!hideSidebar ? 'pb-32 md:pl-32 md:pb-0' : ''}`}>
         <div className="flex-1 overflow-y-auto w-full">
           {children}
         </div>
