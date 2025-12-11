@@ -12,10 +12,11 @@ import { useRouter } from 'next/navigation';
 import { getPostsCache, setPostsCache, updatePostInCache, invalidatePostsCache } from '@/lib/posts-cache';
 
 interface FeedPageProps {
-  currentUser: User
+  currentUser: User;
+  onNavigate: (page: string, data?: any) => void;
 }
 
-export default function FeedPage({ currentUser }: FeedPageProps) {
+export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
   const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,9 +153,21 @@ export default function FeedPage({ currentUser }: FeedPageProps) {
     }
   };
 
+  const handleDeletePost = (postId: string) => {
+    if (confirm("Are you sure you want to delete this signal?")) {
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      // In a real app, call API here
+    }
+  };
+
+  const handleReportPost = (postId: string) => {
+    alert("Signal reported to the Void Authority. We will investigate.");
+    // In a real app, call API here
+  };
+
   // --- AD INJECTION LOGIC ---
   const renderPostsWithAds = () => {
-    const result = [];
+    const result: React.ReactNode[] = [];
     const AD_FREQUENCY = 5; // Every 5 posts
 
     posts.forEach((post, index) => {
@@ -166,6 +179,8 @@ export default function FeedPage({ currentUser }: FeedPageProps) {
           onLike={handleLike}
           onUserClick={(user) => setSelectedUser(user)}
           onClick={() => router.push(`/post/${post.id}`)}
+          onDelete={handleDeletePost}
+          onReport={handleReportPost}
         />
       );
 

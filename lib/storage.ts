@@ -12,6 +12,8 @@ export interface User {
   school: string
   avatar: string
   avatar_initials?: string
+  avatarUrl?: string
+  bannerUrl?: string
 }
 
 export interface Post {

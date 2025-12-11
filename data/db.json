@@ -1,6 +1,19 @@
 {
   "users": [
     {
+      "id": "admin-user-id",
+      "email": "admin@talksy.app",
+      "name": "Void Admin",
+      "username": "admin",
+      "password_hash": "$2a$10$w... (I will fill this in next step)",
+      "image": null,
+      "bio": "System Administrator",
+      "currentCity": "The Void",
+      "cityOfBirth": "Null",
+      "avatar_initials": "AD",
+      "created_at": "2024-01-01T00:00:00.000Z"
+    },
+    {
       "id": "mirhbytkkosgp5j7dr",
       "username": "iilovecoffee__",
       "email": "sharifrahmanl0786@gmail.com",

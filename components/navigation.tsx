@@ -1,7 +1,7 @@
 "use client"
 
 import type { User } from "@/lib/storage"
-import { Home, Compass, Bell, User as UserIcon, Settings, LucideIcon } from "lucide-react"
+import { Home, Compass, Bell, User as UserIcon, Settings, LucideIcon, Shield } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -45,6 +45,14 @@ export default function Navigation({ currentUser }: NavigationProps) {
       <NavItem href="/explore" icon={Compass} pathname={pathname} />
       <NavItem href="/notifications" icon={Bell} pathname={pathname} />
       <NavItem href="/profile" icon={UserIcon} pathname={pathname} />
+
+      {/* ADMIN LINK (Only for Admin) */}
+      {currentUser?.email === 'admin@talksy.app' && (
+        <>
+          <div className="h-px w-8 bg-white/10 my-2"></div> {/* Admin Divider */}
+          <NavItem href="/admin" icon={Shield} pathname={pathname} />
+        </>
+      )}
 
       <div className="h-px w-8 bg-white/10 my-2"></div> {/* Divider */}
 

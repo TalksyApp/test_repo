@@ -3,9 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import LiveBackground from "@/components/auth/live-background"
 
+type ComposerMode = 'focus' | 'quick'
+
 interface BackgroundContextType {
     isLiveBackgroundEnabled: boolean
     toggleBackground: () => void
+    composerMode: ComposerMode
+    setComposerMode: (mode: ComposerMode) => void
 }
 
 const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined)
@@ -13,13 +17,20 @@ const BackgroundContext = createContext<BackgroundContextType | undefined>(undef
 export function BackgroundProvider({ children }: { children: React.ReactNode }) {
     // Default to true (Nebula/Live mode)
     const [isLiveBackgroundEnabled, setIsLiveBackgroundEnabled] = useState(true)
+    // Default to focus (Center modal)
+    const [composerMode, setComposerModeState] = useState<ComposerMode>('focus')
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
         // Load preference from localStorage on mount
-        const saved = localStorage.getItem("live-background-enabled")
-        if (saved !== null) {
-            setIsLiveBackgroundEnabled(JSON.parse(saved))
+        const savedBg = localStorage.getItem("live-background-enabled")
+        if (savedBg !== null) {
+            setIsLiveBackgroundEnabled(JSON.parse(savedBg))
+        }
+
+        const savedMode = localStorage.getItem("composer-mode")
+        if (savedMode) {
+            setComposerModeState(savedMode as ComposerMode)
         }
         setMounted(true)
     }, [])
@@ -30,12 +41,17 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
         localStorage.setItem("live-background-enabled", JSON.stringify(newValue))
     }
 
+    const setComposerMode = (mode: ComposerMode) => {
+        setComposerModeState(mode)
+        localStorage.setItem("composer-mode", mode)
+    }
+
     if (!mounted) {
         return <>{children}</>
     }
 
     return (
-        <BackgroundContext.Provider value={{ isLiveBackgroundEnabled, toggleBackground }}>
+        <BackgroundContext.Provider value={{ isLiveBackgroundEnabled, toggleBackground, composerMode, setComposerMode }}>
             {/* GLOBAL BACKGROUND LAYERS */}
             {isLiveBackgroundEnabled && (
                 <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">

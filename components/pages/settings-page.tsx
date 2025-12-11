@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
     Bell, Moon, Lock, User as UserIcon, LogOut, ChevronRight,
-    Shield, Eye, Volume2, Trash2, Palette
+    Shield, Eye, Volume2, Trash2, Palette, Zap
 } from 'lucide-react';
 import { storage, type User } from "@/lib/storage"
 
@@ -16,7 +16,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ currentUser, onNavigate, onLogout }: SettingsPageProps) {
-    const { isLiveBackgroundEnabled, toggleBackground } = useBackground()
+    const { isLiveBackgroundEnabled, toggleBackground, composerMode, setComposerMode } = useBackground()
     // Local state for other settings
     const [settings, setSettings] = useState({
         notifications: true,
@@ -89,9 +89,19 @@ export default function SettingsPage({ currentUser, onNavigate, onLogout }: Sett
                         <ToggleRow
                             icon={Palette}
                             label="App Theme"
-                            sublabel={!isLiveBackgroundEnabled ? "Active: Void Black (OLED)" : "Active: Deep Nebula"}
-                            isOn={!isLiveBackgroundEnabled}
+                            sublabel={isLiveBackgroundEnabled ? "Active: Deep Nebula & Particles" : "Active: Void Black (OLED)"}
+                            isOn={isLiveBackgroundEnabled}
                             onClick={toggleBackground}
+                        />
+
+                        {/* COMPOSER MODE TOGGLE */}
+                        <div className="w-full h-px bg-white/5" />
+                        <ToggleRow
+                            icon={Zap} // Using Zap as a placeholder for mode, or Layout
+                            label="Composer Mode"
+                            sublabel={composerMode === 'focus' ? "Focus: Full Screen Overlay" : "Quick: Bottom Corner Popup"}
+                            isOn={composerMode === 'focus'}
+                            onClick={() => setComposerMode(composerMode === 'focus' ? 'quick' : 'focus')}
                         />
 
                         <div className="h-px w-full bg-white/5"></div>

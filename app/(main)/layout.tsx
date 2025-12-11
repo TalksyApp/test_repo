@@ -61,12 +61,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const showChatButton = pathname === "/"
   const isOnChatPage = pathname === "/chat"
 
+  // Hide sidebar on Chat page (User request)
+  const hideSidebar = isOnChatPage
+
   return (
     <div className="flex h-screen w-full bg-transparent overflow-hidden relative">
       {/* Fixed Sidebar (Glass Dock) handles its own positioning */}
-      <Navigation currentUser={currentUser} />
+      {!hideSidebar && <Navigation currentUser={currentUser} />}
 
-      <main className="flex-1 relative overflow-hidden flex flex-col pl-32">
+      <main className={`flex-1 relative overflow-hidden flex flex-col ${!hideSidebar ? 'pl-32' : ''}`}>
         <div className="flex-1 overflow-y-auto w-full">
           {children}
         </div>

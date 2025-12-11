@@ -1,15 +1,59 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  ArrowLeft, Hash, Bell, Users, Search, HelpCircle,
-  PlusCircle, Gift, Sticker, Smile, Send
+  ArrowLeft, Hash, Bell, Search,
+  Smile, Send, Users, Gift, Sticker, PlusCircle
 } from 'lucide-react';
-import { type Topic, type User, type Post } from "@/lib/storage"
-import PostCard from "@/components/post-card"
+import { type User, type Post } from "@/lib/storage"
+import LiveBackground from "@/components/live-background";
+
+/* --- CUSTOM COMPONENT: COMPACT CHAT MESSAGE --- */
+interface ChatMessageProps {
+  post: Post;
+  onUserClick: (user: any) => void;
+  currentUser: User;
+}
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUser }) => {
+  const isMe = post.userId === currentUser.id;
+
+  return (
+    // rounded-[32px] for extra curvy look
+    <div className={`group flex items-start gap-4 px-6 py-4 hover:bg-white/5 rounded-[32px] transition-all duration-200 border border-transparent hover:border-white/5 bg-black/40 backdrop-blur-md mb-3 mx-2 shadow-sm ${isMe ? 'border-l-4 border-l-indigo-500' : ''}`}>
+      {/* Avatar */}
+      <div
+        onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
+        className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold cursor-pointer hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20 shrink-0 border-2 border-black"
+      >
+        {post.avatar}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 pt-1">
+        <div className="flex items-baseline gap-2 mb-1">
+          <span
+            onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
+            className="font-bold text-white hover:underline cursor-pointer text-[15px]"
+          >
+            {post.author}
+          </span>
+          {/* Verified Badge (Simulated) */}
+          {post.author === "Design_God" && <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-black font-black">✓</div>}
+
+          <span className="text-xs text-zinc-500 font-medium">{new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+
+        <p className="text-zinc-200 text-[15px] leading-relaxed break-words font-light">
+          {post.content}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 interface TopicDetailProps {
-  topic: { name: string } | any; // Allow simplified topic or full Topic object
+  topic: { name: string } | any;
   onBack: () => void;
   currentUser: User;
 }
@@ -17,19 +61,19 @@ interface TopicDetailProps {
 export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailProps) {
   const [inputValue, setInputValue] = useState("");
   const [posts, setPosts] = useState<Post[]>([])
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch Logic
   useEffect(() => {
     const fetchTopicPosts = async () => {
       try {
         const response = await fetch(`/api/posts?userId=${currentUser.id}`)
         if (response.ok) {
           const allPosts = await response.json()
-          // Filter posts by tag matching topic name
-          const topicPosts = allPosts.filter((post: any) => 
+          const topicPosts = allPosts.filter((post: any) =>
             post.tags && post.tags.includes(topic.name)
           )
-          
-          // Transform to Post interface
+
           const transformedPosts = topicPosts.map((post: any) => ({
             id: post.id,
             userId: post.user_id || '',
@@ -45,7 +89,7 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
             isBoosted: post.is_boosted || false,
             isLikedByUser: post.is_liked_by_user || false
           }))
-          
+
           setPosts(transformedPosts)
         }
       } catch (error) {
@@ -54,6 +98,14 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
     }
     fetchTopicPosts()
   }, [topic, currentUser.id])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [posts]);
 
   const handleSend = async () => {
     if (inputValue.trim()) {
@@ -87,7 +139,7 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
             isLikedByUser: false
           }
 
-          setPosts([newPost, ...posts])
+          setPosts([...posts, newPost]) // Append to end for chat stream
           setInputValue("")
         }
       } catch (error) {
@@ -96,127 +148,117 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
     }
   };
 
-  const handleLike = async (postId: string) => {
-    // Optimistic update - update UI immediately
-    const optimisticPosts = posts.map(post => {
-      if (post.id === postId) {
-        const currentLikes = typeof post.likes === 'number' ? post.likes : (post.likes as any).length || 0
-        const isCurrentlyLiked = (post as any).isLikedByUser
-        return {
-          ...post,
-          likes: isCurrentlyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
-          isLikedByUser: !isCurrentlyLiked
-        } as any
-      }
-      return post
-    })
-    setPosts(optimisticPosts)
-
-    try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id })
-      })
-
-      if (!response.ok) {
-        // Revert on error
-        setPosts(posts)
-      }
-    } catch (error) {
-      console.error('Error liking post:', error)
-      // Revert on error
-      setPosts(posts)
-    }
-  }
-
-  // Default starter message if no posts exist
-  const displayPosts = posts.length > 0 ? posts : [];
+  const displayPosts = posts;
 
   return (
-    // WIDTH FIXED: Full Screen
-    <div className="flex flex-col h-full w-full bg-background animate-in fade-in duration-300 relative z-10">
+    <div className="flex flex-col h-full w-full bg-black relative overflow-hidden">
 
-      {/* --- 1. HEADER (Sticky) --- */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-md sticky top-0 z-30 shadow-lg">
+      {/* --- LIVE BACKGROUND --- */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-black to-purple-900/20"></div>
+        <LiveBackground />
+      </div>
+
+      {/* --- VOID WATERMARK (Fixed Background) --- */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0 opacity-10 select-none">
+        <div className="relative">
+          <Hash size={300} className="text-indigo-500 animate-pulse" />
+          <div className="absolute inset-0 bg-indigo-500/20 blur-[100px]"></div>
+        </div>
+        <h1 className="text-6xl font-black text-white tracking-tighter mt-8">#{topic.name}</h1>
+        <p className="text-xl text-zinc-400 mt-4 font-light tracking-widest uppercase">Frequency Active</p>
+      </div>
+
+      {/* --- 1. HEADER (Glassmorphism) --- */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="hover:bg-white/10 p-2 rounded-full text-gray-400 hover:text-white transition-colors">
+          <button onClick={onBack} className="hover:bg-white/10 p-2 rounded-full text-zinc-400 hover:text-white transition-colors">
             <ArrowLeft size={20} />
           </button>
 
-          <div className="flex items-center gap-2">
-            <Hash size={24} className="text-gray-400" />
-            <h1 className="text-xl font-bold text-white font-display tracking-tight">{topic.name}</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-zinc-900/50 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
+              <Hash size={24} className="text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white font-display tracking-tight leading-none">{topic.name}</h1>
+              <p className="text-xs text-zinc-500 font-medium mt-1 flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                Live Channel
+              </p>
+            </div>
           </div>
-
-          <div className="h-6 w-px bg-white/10 hidden md:block"></div>
-          <p className="text-sm text-gray-400 hidden md:block truncate max-w-xs cursor-default">
-            {topic.description}
-          </p>
         </div>
 
-        <div className="flex items-center gap-5 text-gray-400">
-          <Bell size={22} className="hover:text-white cursor-pointer transition-colors" />
-          <Users size={22} className="hover:text-white cursor-pointer transition-colors hidden sm:block" />
-          <div className="hidden lg:flex items-center bg-[#111] px-3 py-1.5 rounded border border-white/5">
-            <input placeholder="Search" className="bg-transparent text-sm text-white outline-none w-24 placeholder-gray-600" />
-            <Search size={14} />
+        <div className="flex items-center gap-4 text-zinc-400">
+          <div className="hidden sm:flex items-center -space-x-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-9 h-9 rounded-full bg-zinc-800 border-[3px] border-black flex items-center justify-center text-xs font-bold text-zinc-500">
+                U{i}
+              </div>
+            ))}
+            <div className="w-9 h-9 rounded-full bg-zinc-800 border-[3px] border-black flex items-center justify-center text-xs font-bold text-white">
+              +42
+            </div>
           </div>
+          <div className="w-px h-6 bg-white/10 mx-2"></div>
+          <Bell size={20} className="hover:text-white cursor-pointer transition-colors" />
+          <Search size={20} className="hover:text-white cursor-pointer transition-colors" />
         </div>
       </div>
 
-      {/* --- 2. CHAT STREAM (Scrollable) --- */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 scrollbar-hide pb-24">
-        {/* Welcome Graphic */}
-        <div className="mt-8 mb-12 px-4 border-b border-white/5 pb-8">
-          <div className="w-16 h-16 bg-[#202225] rounded-full flex items-center justify-center mb-4">
-            <Hash size={40} className="text-white" />
-          </div>
-          <h2 className="text-3xl font-black text-white mb-2">Welcome to #{topic.name}!</h2>
-          <p className="text-gray-400">This is the start of the <span className="font-bold text-white">#{topic.name}</span> channel.</p>
-        </div>
-
-        {displayPosts.length === 0 && (
-          <div className="px-4 py-2 text-gray-500">
-            Welcome to the #{topic.name} channel. Be the first to transmit.
-          </div>
-        )}
-
-        {displayPosts.map((post) => (
-          <div key={post.id} className="hover:bg-[#2f3136]/30 px-2 py-2 rounded-lg transition-colors">
-            <PostCard post={post} currentUser={currentUser} onLike={handleLike} />
-          </div>
-        ))}
-      </div>
-
-      {/* --- 3. INPUT AREA (Sticky Bottom) --- */}
-      <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-black via-black to-transparent z-30">
-        <div className="bg-[#202225] rounded-2xl flex items-center px-4 py-3 border border-white/5 shadow-2xl">
-
-          <button className="bg-gray-400 text-[#202225] rounded-full p-1 hover:text-white hover:bg-gray-500 transition-colors mr-4">
-            <PlusCircle size={20} fill="currentColor" className="text-[#202225]" />
-          </button>
-
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={`Message #${topic.name}`}
-            className="flex-1 bg-transparent text-gray-200 placeholder-gray-500 outline-none text-base font-medium"
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          />
-
-          <div className="flex items-center gap-4 text-gray-400 mx-2">
-            <Gift size={24} className="hover:text-yellow-400 cursor-pointer transition-colors hidden sm:block" />
-            <Sticker size={24} className="hover:text-blue-400 cursor-pointer transition-colors" />
-            <Smile size={24} className="hover:text-yellow-400 cursor-pointer transition-colors" />
-          </div>
-
-          {inputValue.trim() && (
-            <button onClick={handleSend} className="ml-2 text-indigo-400 hover:text-indigo-300 transition-colors">
-              <Send size={24} />
-            </button>
+      {/* --- 2. CHAT STREAM --- */}
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent z-10 relative">
+        <div className="space-y-1 pb-32 pt-24">
+          {displayPosts.length === 0 ? (
+            <div className="text-center text-gray-500 py-20">
+              <p>Welcome to #{topic.name}. Be the first to transmit.</p>
+            </div>
+          ) : (
+            displayPosts.map((post) => (
+              <ChatMessage key={post.id} post={post} onUserClick={() => { }} currentUser={currentUser} />
+            ))
           )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* --- 3. INPUT AREA (Floating Command Bar) --- */}
+      <div className="absolute bottom-6 left-0 right-0 px-6 z-50">
+        <div className="max-w-4xl mx-auto relative group">
+          {/* Glow Effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full opacity-20 blur-md group-focus-within:opacity-50 transition duration-500"></div>
+
+          {/* CAPSULE INPUT CONTAINER */}
+          <div className="relative bg-[#0c0c0e]/90 backdrop-blur-xl rounded-full flex items-center p-2 border border-white/10 shadow-2xl">
+
+            <button className="p-3 hover:bg-white/10 rounded-full text-zinc-400 hover:text-yellow-400 transition-colors">
+              <Smile size={24} />
+            </button>
+
+            <div className="h-6 w-px bg-white/10 mx-2"></div>
+
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={`Message #${topic.name}...`}
+              className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none text-lg font-medium px-2"
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              autoFocus
+            />
+
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              className={`p-3.5 rounded-full transition-all duration-300 ${inputValue.trim()
+                ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-105'
+                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+            >
+              <Send size={20} fill={inputValue.trim() ? "currentColor" : "none"} />
+            </button>
+          </div>
         </div>
       </div>
 
