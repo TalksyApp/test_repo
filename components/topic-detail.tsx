@@ -151,7 +151,7 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
   const displayPosts = posts;
 
   return (
-    <div className="flex flex-col h-full w-full bg-black relative overflow-hidden">
+    <div className="fixed inset-0 z-[60] md:relative md:inset-auto md:z-auto flex flex-col h-full w-full bg-black overflow-hidden">
 
       {/* --- LIVE BACKGROUND --- */}
       <div className="absolute inset-0 pointer-events-none">

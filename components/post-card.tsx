@@ -73,8 +73,9 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
 
   // --- PERMISSIONS ---
   // Simple check: Author or Admin
-  const isAuthor = currentUser?.id === post.authorId;
-  const isAdmin = currentUser?.email === 'admin@talksy.app'; // Hardcoded admin check as requested
+  // Ensure we check both possible ID fields (userId from DB, authorId from some props)
+  const isAuthor = currentUser?.id === (post.userId || post.authorId);
+  const isAdmin = currentUser?.email === 'admin@talksy.app';
   const canDelete = isAuthor || isAdmin;
 
   return (
@@ -86,9 +87,10 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
           : 'border-white/10 hover:border-white/20 hover:bg-[#111] shadow-[0_0_30px_rgba(255,255,255,0.02)] hover:shadow-[0_0_50px_rgba(255,255,255,0.05)]'}`
       }>
 
-      {/* --- SIDE GLOW ACCENT --- */}
-      {!isBoosted && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(99,102,241,0.6)] opacity-80 group-hover:opacity-100 group-hover:w-1.5 transition-all duration-300 rounded-l-3xl"></div>
+      {/* --- SIDE GLOW ACCENT (Only for My Posts) --- */}
+      {/* "Rainbow type... only appear on the chat that we have posted" */}
+      {!isBoosted && isAuthor && (
+        <div className="absolute left-[1px] top-[1px] bottom-[1px] w-1.5 md:w-2 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_20px_rgba(99,102,241,0.6)] opacity-90 group-hover:opacity-100 group-hover:w-2.5 transition-all duration-300 rounded-tl-[22px] rounded-bl-[22px] z-0"></div>
       )}
 
       {/* Header */}
