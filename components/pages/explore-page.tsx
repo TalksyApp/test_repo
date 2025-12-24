@@ -51,11 +51,16 @@ export default function ExplorePage({ currentUser, selectedTopic, onTopicSelect,
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-8 md:mb-16 group">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-500"></div>
-        <div className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center px-4 md:px-6 py-4 md:py-5 transition-all group-focus-within:border-white/30">
-          <Search className="text-gray-500 group-focus-within:text-white transition-colors mr-4" size={24} />
-          <input type="text" placeholder="Search users, topics..." className="w-full bg-transparent text-lg md:text-xl text-white placeholder-gray-600 outline-none border-none font-medium" />
+      {/* Search Bar - Sticky Top on Mobile, Relative on Desktop */}
+      <div className="sticky top-0 z-50 -mx-4 px-4 py-3 mb-8 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 md:relative md:bg-transparent md:backdrop-blur-none md:border-none md:p-0 md:mx-0 md:mb-16 group transition-all duration-300">
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-500"></div>
+        <div className="relative bg-[#121214] md:bg-[#0a0a0a] border border-white/10 rounded-2xl flex items-center px-4 md:px-6 py-3.5 md:py-5 transition-all group-focus-within:border-white/30 group-focus-within:bg-black shadow-lg md:shadow-none">
+          <Search className="text-gray-500 group-focus-within:text-white transition-colors mr-3 md:mr-4" size={20} />
+          <input
+            type="text"
+            placeholder="Search users, topics..."
+            className="w-full bg-transparent text-lg md:text-xl text-white placeholder-gray-600 outline-none border-none font-medium"
+          />
         </div>
       </div>
 

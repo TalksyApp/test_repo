@@ -21,7 +21,12 @@ export default function CreateModal({ isOpen, onClose, onPost }: CreateModalProp
     // Sync active mode with global preference when modal opens
     useEffect(() => {
         if (isOpen) {
-            setActiveMode(composerMode);
+            // Default to Quick Mode on mobile for better keyboard experience
+            if (window.innerWidth < 768) {
+                setActiveMode('quick');
+            } else {
+                setActiveMode(composerMode);
+            }
         }
     }, [isOpen, composerMode]);
 
@@ -44,12 +49,13 @@ export default function CreateModal({ isOpen, onClose, onPost }: CreateModalProp
     // Focus Mode: Full Screen Overlay
     // Quick Mode: Bottom Right Popup (No Backdrop)
     const containerClasses = isQuick
-        ? "fixed bottom-24 right-8 z-[200] w-[400px] animate-in slide-in-from-bottom-10 fade-in duration-300 pointer-events-auto"
-        : "fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200";
+        ? "fixed bottom-0 left-0 right-0 md:bottom-24 md:right-8 md:w-[400px] md:left-auto z-[200] animate-in slide-in-from-bottom-10 fade-in duration-300 pointer-events-auto"
+        : "fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200";
 
     const cardClasses = isQuick
-        ? `bg-[#0a0a0a] w-full rounded-2xl border transition-all duration-500 p-5 relative shadow-2xl ${isBoosted ? 'border-yellow-500/50 shadow-[0_0_60px_rgba(234,179,8,0.2)]' : 'border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]'}`
-        : `bg-[#0a0a0a] w-full max-w-4xl rounded-3xl border transition-all duration-500 p-8 relative shadow-2xl ${isBoosted ? 'border-yellow-500/50 shadow-[0_0_80px_rgba(234,179,8,0.2)]' : 'border-white/10 shadow-2xl shadow-black/50'}`;
+        ? `bg-[#0a0a0a] w-full rounded-t-3xl md:rounded-2xl border transition-all duration-500 p-5 relative shadow-2xl ${isBoosted ? 'border-yellow-500/50 shadow-[0_0_60px_rgba(234,179,8,0.2)]' : 'border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]'}`
+        : `bg-[#0a0a0a] w-full max-w-4xl rounded-t-3xl md:rounded-3xl border transition-all duration-500 p-6 md:p-8 relative shadow-2xl pb-[env(safe-area-inset-bottom)] ${isBoosted ? 'border-yellow-500/50 shadow-[0_0_80px_rgba(234,179,8,0.2)]' : 'border-white/10 shadow-2xl shadow-black/50'} mb-0 md:mb-auto`;
+
 
     return (
         <div className={isQuick ? "fixed inset-0 z-[200] pointer-events-none" : containerClasses}>

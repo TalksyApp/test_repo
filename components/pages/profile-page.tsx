@@ -10,6 +10,7 @@ import {
   MapPin, Cake, Ghost, Languages, User as UserIcon, GraduationCap,
   Home, Briefcase, Edit3, Grid, List, LucideIcon, Share2, MessageCircle
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface ProfilePageProps {
   currentUser: any;
@@ -37,6 +38,7 @@ const DataCard: React.FC<DataCardProps> = ({ icon: Icon, label, value, delay }) 
 );
 
 export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: ProfilePageProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<string>('posts')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [userPosts, setUserPosts] = useState<Post[]>([])
@@ -182,7 +184,13 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
               <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
                 {userPosts.length > 0 ? (
                   userPosts.map(post => (
-                    <PostCard key={post.id} post={post} currentUser={currentUser} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={currentUser}
+                      onClick={() => router.push(`/post/${post.id}`)}
+                      onComment={() => router.push(`/post/${post.id}`)}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-20 border border-dashed border-white/10 rounded-[32px] bg-white/5">
@@ -250,7 +258,13 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
               {(activeTab === 'posts' || activeTab === 'overview') ? (
                 userPosts.length > 0 ? (
                   userPosts.map(post => (
-                    <PostCard key={post.id} post={post} currentUser={currentUser} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={currentUser}
+                      onClick={() => router.push(`/post/${post.id}`)}
+                      onComment={() => router.push(`/post/${post.id}`)}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-32 border border-dashed border-white/10 rounded-2xl bg-[#0c0c0e]">

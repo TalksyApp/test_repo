@@ -19,34 +19,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUse
   const isMe = post.userId === currentUser.id;
 
   return (
-    // rounded-[32px] for extra curvy look
-    <div className={`group flex items-start gap-4 px-6 py-4 hover:bg-white/5 rounded-[32px] transition-all duration-200 border border-transparent hover:border-white/5 bg-black/40 backdrop-blur-md mb-3 mx-2 shadow-sm ${isMe ? 'border-l-4 border-l-indigo-500' : ''}`}>
-      {/* Avatar */}
-      <div
-        onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
-        className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold cursor-pointer hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20 shrink-0 border-2 border-black"
-      >
-        {post.userId.charAt(0).toUpperCase()}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0 pt-1">
-        <div className="flex items-baseline gap-2 mb-1">
-          <span
-            onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
-            className="font-bold text-white hover:underline cursor-pointer text-[15px]"
-          >
-            {post.userId}
-          </span>
-          {/* Verified Badge (Simulated) */}
-          {post.userId === "user_design_god" && <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-black font-black">✓</div>}
-
-          <span className="text-xs text-zinc-500 font-medium">{new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+    <div className={`flex w-full mb-3 px-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
+      {!isMe && (
+        <div
+          onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
+          className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0 mr-2 cursor-pointer self-end mb-1"
+        >
+          {post.userId ? post.userId[0].toUpperCase() : '?'}
         </div>
+      )}
 
-        <p className="text-zinc-200 text-[15px] leading-relaxed break-words font-light">
-          {post.content}
-        </p>
+      <div className={`relative max-w-[75%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm break-words ${isMe
+        ? 'bg-indigo-600 text-white rounded-br-sm'
+        : 'bg-[#1f1f22] text-zinc-100 rounded-bl-sm border border-white/5'
+        }`}>
+        {!isMe && (
+          <div className="text-[10px] font-bold text-indigo-400 mb-1 opacity-80">{post.userId}</div>
+        )}
+
+        {post.content}
+
+        <div className={`text-[9px] mt-1 text-right font-medium tracking-wide opacity-60 ${isMe ? 'text-indigo-200' : 'text-zinc-500'}`}>
+          {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
       </div>
     </div>
   );
@@ -148,71 +143,57 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
     }
   };
 
-  const displayPosts = posts;
+  const displayPosts = posts
 
   return (
-    <div className="fixed inset-0 z-[60] md:relative md:inset-auto md:z-auto flex flex-col h-full w-full bg-black overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#050505] md:relative md:inset-auto md:z-0 md:bg-transparent md:h-full flex flex-col animate-in fade-in slide-in-from-right-10 duration-300">
 
-      {/* --- LIVE BACKGROUND --- */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-black to-purple-900/20"></div>
+      {/* BACKGROUND PARTICLES (Subtle) */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
         <LiveBackground />
       </div>
 
-      {/* --- VOID WATERMARK (Fixed Background) --- */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0 opacity-10 select-none">
-        <div className="relative">
-          <Hash size={300} className="text-indigo-500 animate-pulse" />
-          <div className="absolute inset-0 bg-indigo-500/20 blur-[100px]"></div>
-        </div>
-        <h1 className="text-6xl font-black text-white tracking-tighter mt-8">#{topic.name}</h1>
-        <p className="text-xl text-zinc-400 mt-4 font-light tracking-widest uppercase">Frequency Active</p>
-      </div>
-
-      {/* --- 1. HEADER (Glassmorphism) --- */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/60 backdrop-blur-xl sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="hover:bg-white/10 p-2 rounded-full text-zinc-400 hover:text-white transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-
+      {/* --- 1. HEADER (Whatsapp style) --- */}
+      <div className="relative z-10 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 pt-safe-top pb-3 md:pt-4">
+        <div className="px-4 flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-zinc-900/50 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
-              <Hash size={24} className="text-indigo-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white font-display tracking-tight leading-none">{topic.name}</h1>
-              <p className="text-xs text-zinc-500 font-medium mt-1 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
-                Live Channel
-              </p>
-            </div>
-          </div>
-        </div>
+            <button onClick={onBack} className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors text-white">
+              <ArrowLeft size={22} />
+            </button>
 
-        <div className="flex items-center gap-4 text-zinc-400">
-          <div className="hidden sm:flex items-center -space-x-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-9 h-9 rounded-full bg-zinc-800 border-[3px] border-black flex items-center justify-center text-xs font-bold text-zinc-500">
-                U{i}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+              {topic.name[0]}
+            </div>
+
+            <div>
+              <div className="font-bold text-lg text-white leading-tight">#{topic.name}</div>
+              <div className="text-xs text-indigo-400 font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                Frequency Active
               </div>
-            ))}
-            <div className="w-9 h-9 rounded-full bg-zinc-800 border-[3px] border-black flex items-center justify-center text-xs font-bold text-white">
-              +42
             </div>
           </div>
-          <div className="w-px h-6 bg-white/10 mx-2"></div>
-          <Bell size={20} className="hover:text-white cursor-pointer transition-colors" />
-          <Search size={20} className="hover:text-white cursor-pointer transition-colors" />
+
+          <div className="flex items-center gap-2 text-zinc-400">
+            <button className="p-2 hover:bg-white/10 rounded-full hover:text-white transition-colors">
+              <Search size={20} />
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded-full hover:text-white transition-colors">
+              <Users size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* --- 2. CHAT STREAM --- */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent z-10 relative">
-        <div className="space-y-1 pb-32 pt-24">
+      <div className="flex-1 overflow-y-auto w-full bg-transparent relative z-0 scrollbar-hide">
+        <div className="min-h-full flex flex-col justify-end pb-24 pt-4">
           {displayPosts.length === 0 ? (
-            <div className="text-center text-gray-500 py-20">
-              <p>Welcome to #{topic.name}. Be the first to transmit.</p>
+            <div className="text-center text-zinc-600 py-20 px-8">
+              <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+                <Hash className="text-zinc-700" size={32} />
+              </div>
+              <p className="text-sm">This frequency is silent. Transmit the first signal.</p>
             </div>
           ) : (
             displayPosts.map((post) => (
@@ -223,45 +204,44 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
         </div>
       </div>
 
-      {/* --- 3. INPUT AREA (Floating Command Bar) --- */}
-      <div className="absolute bottom-6 left-0 right-0 px-6 z-50">
-        <div className="max-w-4xl mx-auto relative group">
-          {/* Glow Effect */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full opacity-20 blur-md group-focus-within:opacity-50 transition duration-500"></div>
+      {/* --- 3. INPUT AREA (Fixed Bottom) --- */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#050505] p-3 pb-[env(safe-area-inset-bottom)] z-50 border-t border-white/5 md:absolute md:bottom-0 md:bg-transparent md:border-none md:pb-6">
+        <div className="flex items-end gap-2 max-w-4xl mx-auto">
+          {/* Plus Icon (Optional, keeping it clean as requested) */}
+          {/* <button className="p-3 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full mb-0.5">
+             <PlusCircle size={24} />
+           </button> */}
 
-          {/* CAPSULE INPUT CONTAINER */}
-          <div className="relative bg-[#0c0c0e]/90 backdrop-blur-xl rounded-full flex items-center p-2 border border-white/10 shadow-2xl">
-
-            <button className="p-3 hover:bg-white/10 rounded-full text-zinc-400 hover:text-yellow-400 transition-colors">
-              <Smile size={24} />
-            </button>
-
-            <div className="h-6 w-px bg-white/10 mx-2"></div>
-
+          <div className="flex-1 bg-[#1a1a1a] rounded-[24px] flex items-center border border-white/5 focus-within:border-white/20 transition-colors min-h-[50px]">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder={`Message #${topic.name}...`}
-              className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none text-lg font-medium px-2"
+              placeholder="Message..."
+              className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none text-[16px] px-5 py-3.5 max-h-32"
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              autoFocus
             />
-
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim()}
-              className={`p-3.5 rounded-full transition-all duration-300 ${inputValue.trim()
-                ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-105'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                }`}
-            >
-              <Send size={20} fill={inputValue.trim() ? "currentColor" : "none"} />
-            </button>
           </div>
+
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim()}
+            className={`w-[50px] h-[50px] rounded-full flex items-center justify-center transition-all duration-300 shrink-0 border border-transparent bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] ${inputValue.trim()
+              ? 'opacity-100 hover:scale-110 active:scale-95 hover:shadow-[0_0_30px_rgba(99,102,241,0.8)] cursor-pointer'
+              : 'opacity-50 grayscale scale-100 shadow-none cursor-not-allowed'
+              }`}
+          >
+            <Send
+              size={22}
+              className={`transition-all duration-300 ${inputValue.trim() ? "translate-x-0.5 -translate-y-0.5 scale-110" : ""}`}
+              fill="currentColor"
+            />
+          </button>
         </div>
       </div>
 
     </div>
   );
 }
+
+

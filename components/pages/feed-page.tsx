@@ -188,6 +188,7 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
           onClick={() => router.push(`/post/${post.id}`)}
           onDelete={handleDeletePost}
           onReport={handleReportPost}
+          onComment={() => router.push(`/post/${post.id}`)}
         />
       );
 

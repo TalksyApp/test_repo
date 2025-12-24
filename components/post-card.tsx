@@ -11,6 +11,7 @@ interface PostCardProps {
   onClick?: () => void;
   onDelete?: (id: string) => void;
   onReport?: (id: string) => void;
+  onComment?: (id: string) => void;
 }
 
 const Avatar = ({ char, isBoosted }: { char: string, isBoosted: boolean }) => (
@@ -41,7 +42,7 @@ const Btn: React.FC<BtnProps> = ({ icon: Icon, count, color, onClick, isActive }
   </button>
 );
 
-export default function PostCard({ post, onUserClick, currentUser, onLike, onClick, onDelete, onReport }: PostCardProps) {
+export default function PostCard({ post, onUserClick, currentUser, onLike, onClick, onDelete, onReport, onComment }: PostCardProps) {
   // Dynamic Styles based on "Boost"
   const isBoosted = post.isPromoted || post.isBoosted; // Handle both naming conventions
 
@@ -170,7 +171,7 @@ export default function PostCard({ post, onUserClick, currentUser, onLike, onCli
       <div className="flex items-center justify-between pl-[52px] pt-3 border-t border-white/5">
         <div className="flex gap-6">
           <Btn icon={Heart} count={likesCount} color="hover:text-pink-500" isActive={isLiked} onClick={() => onLike && onLike(post.id)} />
-          <Btn icon={MessageCircle} count={commentsCount} color="hover:text-blue-400" />
+          <Btn icon={MessageCircle} count={commentsCount} color="hover:text-blue-400" onClick={() => onComment && onComment(post.id)} />
           <Btn icon={Share2} color="hover:text-green-400" />
         </div>
       </div>
