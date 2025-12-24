@@ -26,7 +26,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUse
         onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
         className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold cursor-pointer hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20 shrink-0 border-2 border-black"
       >
-        {post.avatar}
+        {post.userId.charAt(0).toUpperCase()}
       </div>
 
       {/* Content */}
@@ -36,10 +36,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUse
             onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
             className="font-bold text-white hover:underline cursor-pointer text-[15px]"
           >
-            {post.author}
+            {post.userId}
           </span>
           {/* Verified Badge (Simulated) */}
-          {post.author === "Design_God" && <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-black font-black">✓</div>}
+          {post.userId === "user_design_god" && <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-black font-black">✓</div>}
 
           <span className="text-xs text-zinc-500 font-medium">{new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>

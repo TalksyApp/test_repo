@@ -6,6 +6,7 @@ import CreateModal from '@/components/create-modal';
 import UserPopup from '@/components/user-popup';
 import SkeletonPost from '@/components/skeletons/skeleton-post';
 import AdCard from '@/components/ad-card';
+import ConfirmationModal from '@/components/confirmation-modal';
 import { type User, type Post } from "@/lib/storage"
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
   const [topic, setTopic] = useState<string | null>(null) // Feed is general for now
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -154,11 +156,16 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
   };
 
   const handleDeletePost = (postId: string) => {
-    if (confirm("Are you sure you want to delete this signal?")) {
-      setPosts(prev => prev.filter(p => p.id !== postId));
-      // In a real app, call API here
-    }
+    setPostToDelete(postId); // 3. Modify handleDeletePost
   };
+
+  // 4. Add confirmDelete
+  const confirmDelete = () => {
+    if (postToDelete) {
+      setPosts(prev => prev.filter(p => p.id !== postToDelete));
+      setPostToDelete(null);
+    }
+  }
 
   const handleReportPost = (postId: string) => {
     alert("Signal reported to the Void Authority. We will investigate.");
@@ -202,9 +209,11 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
             {topic && <span className="text-gray-600 text-3xl md:text-4xl">#</span>}
             {topic ? topic : "Feed"}
           </h1>
-          <p className="text-gray-500 text-lg md:text-xl font-medium">
-            {topic ? `Exploring transmissions about ${topic}.` : "Transmissions from the void."}
-          </p>
+          {topic && (
+            <p className="text-gray-500 text-lg md:text-xl font-medium">
+              Exploring transmissions about {topic}.
+            </p>
+          )}
         </div>
 
         {/* POSTS CONTAINER */}
@@ -249,6 +258,15 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
       >
         <Plus size={32} />
       </button>
+      <ConfirmationModal
+        isOpen={!!postToDelete}
+        onClose={() => setPostToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Signal?"
+        description="This will permanently dissolve this transmission into the void. This action cannot be reversed."
+        confirmText="Delete"
+        isDangerous={true}
+      />
     </>
   );
 }

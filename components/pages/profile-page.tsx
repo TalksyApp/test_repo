@@ -4,9 +4,11 @@ import React, { useState, useEffect } from "react"
 import { storage, type User, type Post } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
 import PostCard from "@/components/post-card"
+import EditProfileModal from "@/components/edit-profile-modal"
+import ProfileSidebar from "@/components/profile-sidebar"
 import {
   MapPin, Cake, Ghost, Languages, User as UserIcon, GraduationCap,
-  Home, Briefcase, Edit3, Grid, List, LucideIcon
+  Home, Briefcase, Edit3, Grid, List, LucideIcon, Share2, MessageCircle
 } from "lucide-react"
 
 interface ProfilePageProps {
@@ -15,31 +17,28 @@ interface ProfilePageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
-interface MatrixItemProps {
+interface DataCardProps {
   icon: LucideIcon;
   label: string;
   value?: string;
-  colSpan?: string;
+  delay?: string;
 }
 
-const MatrixItem: React.FC<MatrixItemProps> = ({ icon: Icon, label, value, colSpan }) => (
-  <div className={`bg-[#0a0a0a]/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 hover:border-white/20 hover:bg-[#0a0a0a]/80 transition-all duration-300 group ${colSpan || ''}`}>
-    <div className="flex items-center gap-3 mb-3">
-      <div className="p-2 rounded-xl bg-white/5 group-hover:bg-indigo-500/20 transition-colors">
-        <Icon size={16} className="text-gray-400 group-hover:text-indigo-400 transition-colors" />
-      </div>
-      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+const DataCard: React.FC<DataCardProps> = ({ icon: Icon, label, value, delay }) => (
+  <div className={`bg-[#121214]/60 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-500/30 hover:bg-[#1a1a1c]/80 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4 ${delay || ''}`}>
+    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all">
+      <Icon size={18} className="text-gray-400 group-hover:text-indigo-400 transition-colors" />
     </div>
-    <div className="text-lg font-medium text-white pl-1 break-words">
-      {value || "Not set"}
+    <div>
+      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">{label}</div>
+      <div className="text-sm md:text-base font-semibold text-white">{value || "—"}</div>
     </div>
   </div>
 );
 
 export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: ProfilePageProps) {
-  const [activeTab, setActiveTab] = useState<'posts' | 'identity'>('posts')
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState(currentUser)
+  const [activeTab, setActiveTab] = useState<string>('posts')
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [userPosts, setUserPosts] = useState<Post[]>([])
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
         const response = await fetch(`/api/posts?userId=${currentUser.id}`)
         if (response.ok) {
           const data = await response.json()
-          // Transform API response to match Post interface
+          // Transform API response
           const transformedPosts = data.map((post: any) => ({
             id: post.id,
             userId: post.user_id || '',
@@ -65,7 +64,6 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
             isBoosted: post.is_boosted || false,
             isLikedByUser: post.is_liked_by_user || false
           }))
-          // Exact match filter for current profile (in a real app, API would filter)
           const myPosts = transformedPosts.filter((p: Post) => p.userId === currentUser.id);
           setUserPosts(myPosts)
         }
@@ -76,217 +74,230 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
     fetchPosts()
   }, [currentUser.id])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSave = () => {
-    storage.setCurrentUser(formData)
-    onUserUpdate(formData)
-    setIsEditing(false)
+  const handleUserUpdate = (updatedUser: any) => {
+    storage.setCurrentUser(updatedUser)
+    onUserUpdate(updatedUser)
   }
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto pt-10 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-700 px-6 h-full overflow-y-auto relative scrollbar-hide">
+    <>
+      <div className="w-full flex-1 overflow-y-auto relative scrollbar-hide pb-32">
 
-      {/* --- 1. HEADER CARD --- */}
-      <div className="relative mb-12 group">
-        {/* Banner */}
-        <div className="h-72 w-full rounded-[48px] relative overflow-hidden border border-white/10 shadow-2xl bg-[#0a0a0a]">
-          {/* Background Layer */}
-          {currentUser.bannerUrl ? (
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${currentUser.bannerUrl})` }}></div>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-black"></div>
-          )}
+        {/* ================================================================================== */}
+        {/* MOBILE LAYOUT (Cinematic App View) - Visible only on Mobile */}
+        {/* ================================================================================== */}
+        <div className="block md:hidden">
+          {/* --- HERO SECTION --- */}
+          <div className="relative w-full group">
 
-          {/* Noise Overlay */}
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
-          {/* Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#000] via-transparent to-transparent opacity-80"></div>
+            {/* BANNER */}
+            <div className="h-48 md:h-64 w-full relative overflow-hidden">
+              {currentUser.bannerUrl ? (
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${currentUser.bannerUrl})` }}></div>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-black"></div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+            </div>
+
+            {/* PROFILE HEADER INFO (Centered Layout) */}
+            <div className="max-w-4xl mx-auto px-6 relative z-10 flex flex-col items-center -mt-20 md:-mt-28 gap-6 text-center">
+
+              {/* AVATAR */}
+              <div className="relative group/avatar shrink-0">
+                {/* Glow effect */}
+                <div className="hidden md:block absolute -inset-4 bg-indigo-500 rounded-full blur-2xl opacity-0 group-hover/avatar:opacity-30 transition-all duration-500"></div>
+
+                <div className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0e] border-[6px] border-black overflow-hidden relative z-10 shadow-2xl">
+                  {currentUser.avatarUrl ? (
+                    <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-5xl md:text-7xl font-bold text-zinc-700">
+                      {currentUser.username?.[0] || "U"}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* TEXT INFO (Name & Bio) */}
+              <div className="flex-1 w-full flex flex-col items-center">
+                <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-2 drop-shadow-xl">{currentUser.username}</h1>
+                <p className="text-gray-400 font-medium text-lg md:text-xl mb-4">@{currentUser.username?.toLowerCase() || "user"}</p>
+
+                {currentUser.bio && (
+                  <p className="text-gray-300 text-sm md:text-base max-w-lg mx-auto leading-relaxed opacity-90 mb-6">{currentUser.bio}</p>
+                )}
+
+                {/* STATS */}
+                <div className="flex items-center justify-center gap-10 md:gap-12 mb-8">
+                  <div className="text-center group cursor-pointer hover:scale-105 transition-transform">
+                    <div className="text-2xl md:text-3xl font-black text-white tracking-tight">{userPosts.length}</div>
+                    <div className="text-[10px] md:text-xs uppercase font-bold text-gray-500 tracking-widest mt-1 group-hover:text-indigo-400">Posts</div>
+                  </div>
+                  <div className="text-center group cursor-pointer hover:scale-105 transition-transform">
+                    <div className="text-2xl md:text-3xl font-black text-white tracking-tight">0</div>
+                    <div className="text-[10px] md:text-xs uppercase font-bold text-gray-500 tracking-widest mt-1 group-hover:text-indigo-400">Connections</div>
+                  </div>
+                </div>
+
+                {/* ACTION BUTTONS */}
+                <div className="flex gap-4 w-full md:w-auto justify-center">
+                  <Button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="h-12 md:h-14 rounded-full bg-white text-black font-bold hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] px-10 text-base hover:scale-105 active:scale-95"
+                  >
+                    Edit Profile
+                  </Button>
+                  <Button size="icon" className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5 backdrop-blur-md hover:scale-105 active:scale-95 transition-all">
+                    <Share2 size={22} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- TABS (Capsule Style) --- */}
+          <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-xl py-4 flex justify-center mt-2">
+            <div className="flex p-1 bg-white/5 border border-white/5 rounded-full relative">
+              <button
+                onClick={() => setActiveTab('posts')}
+                className={`px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${activeTab === 'posts' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' : 'text-gray-500 hover:text-white'}`}
+              >
+                Broadcasts
+              </button>
+              <button
+                onClick={() => setActiveTab('identity')}
+                className={`px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${activeTab === 'identity' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' : 'text-gray-500 hover:text-white'}`}
+              >
+                Identity Matrix
+              </button>
+            </div>
+          </div>
+
+          {/* --- CONTENT AREA --- */}
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 min-h-[500px]">
+
+            {/* POSTS TAB */}
+            {activeTab === 'posts' && (
+              <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
+                {userPosts.length > 0 ? (
+                  userPosts.map(post => (
+                    <PostCard key={post.id} post={post} currentUser={currentUser} />
+                  ))
+                ) : (
+                  <div className="text-center py-20 border border-dashed border-white/10 rounded-[32px] bg-white/5">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Grid className="text-gray-500" />
+                    </div>
+                    <div className="text-lg font-medium text-white">No transmissions yet</div>
+                    <div className="text-sm text-gray-500">Static silence...</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* IDENTITY TAB */}
+            {activeTab === 'identity' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
+                <DataCard icon={Briefcase} label="Bio Status" value={currentUser.bio || "Unknown"} delay="duration-300" />
+                <DataCard icon={Home} label="Current City" value={currentUser.currentCity} delay="duration-400" />
+                <DataCard icon={MapPin} label="Origin" value={currentUser.cityOfBirth} delay="duration-500" />
+                <DataCard icon={Cake} label="Cycle Start" value={currentUser.birthday} delay="duration-600" />
+                <DataCard icon={Ghost} label="Zodiac" value={currentUser.zodiac} delay="duration-700" />
+                <DataCard icon={UserIcon} label="Gender" value={currentUser.gender} delay="duration-800" />
+                <DataCard icon={Languages} label="Tongue" value={currentUser.motherTongue} delay="duration-900" />
+                <DataCard icon={GraduationCap} label="Academia" value={currentUser.school} delay="duration-1000" />
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Avatar & Info Wrapper */}
-        <div className="flex flex-col md:flex-row items-end px-12 -mt-24 gap-8 relative z-10">
 
-          {/* Avatar */}
-          <div className="relative group/avatar">
-            {/* Glow Effect */}
-            <div className="absolute inset-0 bg-indigo-500 blur-[50px] opacity-0 group-hover/avatar:opacity-40 transition-opacity duration-700 rounded-full"></div>
+        {/* ================================================================================== */}
+        {/* DESKTOP LAYOUT (Reddit Style) - Visible only on Desktop */}
+        {/* ================================================================================== */}
+        <div className="hidden md:grid grid-cols-12 gap-4 max-w-[1100px] mx-auto mt-8 px-6 min-h-screen">
 
-            <div className="w-44 h-44 rounded-[48px] bg-[#0a0a0a] border-[8px] border-[#000] flex items-center justify-center text-white font-bold text-7xl shadow-2xl overflow-hidden relative z-10">
-              {currentUser.avatarUrl ? (
-                <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          {/* --- LEFT COL: FEED & TABS --- */}
+          <div className={`${activeTab === 'posts' ? 'col-span-12 max-w-3xl mx-auto w-full' : 'col-span-8'}`}>
+
+            {/* Sticky Header: Title + Tabs */}
+            <div className="sticky top-0 z-30 bg-black/60 backdrop-blur-xl -mx-6 px-6 pt-8 pb-4 mb-6 rounded-b-[2rem]">
+              {/* Page Title */}
+              <div className="mb-6">
+                <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter">Profile</h1>
+              </div>
+
+              {/* Desktop Capsule Tabs */}
+              <div className="flex items-center gap-3 transition-all overflow-x-auto scrollbar-hide">
+                {['overview', 'posts', 'comments', 'saved'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-6 py-2.5 rounded-full text-sm font-bold capitalize tracking-wide transition-all duration-200 shrink-0 ${activeTab === tab
+                      ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.15)] scale-105'
+                      : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                      }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Feed Content */}
+            <div className="space-y-4">
+              {(activeTab === 'posts' || activeTab === 'overview') ? (
+                userPosts.length > 0 ? (
+                  userPosts.map(post => (
+                    <PostCard key={post.id} post={post} currentUser={currentUser} />
+                  ))
+                ) : (
+                  <div className="text-center py-32 border border-dashed border-white/10 rounded-2xl bg-[#0c0c0e]">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Grid className="text-gray-500 w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">No broadcasts yet</h3>
+                    <p className="text-gray-500">When you post, it will show up here.</p>
+                    <Button onClick={() => onNavigate('create')} className="mt-6 rounded-full bg-white text-black hover:bg-gray-200">Create Post</Button>
+                  </div>
+                )
               ) : (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-20 group-hover/avatar:opacity-40 transition-opacity"></div>
-                  {currentUser.avatar_initials || "U"}
-                </>
+                /* Placeholder for other tabs */
+                <div className="text-center py-32 border border-dashed border-white/10 rounded-2xl bg-[#0c0c0e]">
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                    {activeTab === 'comments' && <MessageCircle className="text-gray-500 w-8 h-8" />}
+                    {activeTab === 'saved' && <List className="text-gray-500 w-8 h-8" />}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">No {activeTab} yet</h3>
+                  <p className="text-gray-500 text-sm">Check back later for updates.</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Name & Handle & Stats */}
-          <div className="flex-1 mb-4 w-full">
-            <h1 className="text-6xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">{currentUser.username}</h1>
-            <p className="text-gray-400 text-xl font-medium mb-5">@{currentUser.username?.toLowerCase() || "user"}</p>
-
-            {/* Stats Row */}
-            <div className="flex items-center gap-8 text-sm">
-              <div className="flex items-center gap-2 group cursor-pointer">
-                <span className="font-black text-white text-xl">0</span>
-                <span className="text-gray-500 font-medium group-hover:text-indigo-400 transition-colors">Connections</span>
-              </div>
-              <div className="flex items-center gap-2 group cursor-pointer">
-                <span className="font-black text-white text-xl">{userPosts.length}</span>
-                <span className="text-gray-500 font-medium group-hover:text-indigo-400 transition-colors">Broadcasts</span>
-              </div>
+          {/* --- RIGHT COL: SIDEBAR --- */}
+          {activeTab !== 'posts' && (
+            <div className="col-span-4 h-fit">
+              <ProfileSidebar
+                currentUser={currentUser}
+                userPostsCount={userPosts.length}
+                onEdit={() => setIsEditModalOpen(true)}
+              />
             </div>
-          </div>
+          )}
 
-          {/* Edit Action */}
-          <div className="flex gap-3 mb-8">
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="px-8 py-3.5 rounded-full bg-white text-black font-bold hover:scale-105 hover:bg-gray-100 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-            >
-              <Edit3 size={18} /> {isEditing ? "Cancel Edit" : "Edit Profile"}
-            </button>
-          </div>
         </div>
-      </div>
-
-      {/* --- 2. TABS --- */}
-      <div className="flex items-center justify-center mb-12">
-        <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 p-1.5 rounded-full flex gap-1 relative shadow-2xl">
-          <button
-            onClick={() => setActiveTab('posts')}
-            className={`px-8 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${activeTab === 'posts' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-500 hover:text-white'}`}
-          >
-            <Grid size={16} /> Broadcasts
-          </button>
-          <button
-            onClick={() => setActiveTab('identity')}
-            className={`px-8 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${activeTab === 'identity' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-500 hover:text-white'}`}
-          >
-            <List size={16} /> Info
-          </button>
-        </div>
-      </div>
-
-      {/* --- 3. CONTENT AREA --- */}
-      <div className="min-h-[400px]">
-
-        {/* POSTS TAB */}
-        {activeTab === 'posts' && (
-          <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
-            {userPosts.length > 0 ? (
-              userPosts.map(post => (
-                // Using PostCard for consistency, could be CompactPost
-                <PostCard key={post.id} post={post} currentUser={currentUser} />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-24 border border-dashed border-white/10 rounded-[40px] bg-white/5">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-500">
-                  <Grid size={40} />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">No broadcasts yet</h3>
-                <p className="text-gray-500">Your thoughts will appear here.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* IDENTITY TAB */}
-        {activeTab === 'identity' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {isEditing ? (
-              <div className="bg-[#0a0a0a] border border-[#1f1f1f] rounded-3xl p-8 max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold text-white mb-6">Edit Matrix</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                  {/* IMAGES */}
-                  <div className="col-span-full space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Banner Image URL</label>
-                    <input name="bannerUrl" value={formData.bannerUrl || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" placeholder="https://..." />
-                  </div>
-                  <div className="col-span-full space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Avatar Image URL</label>
-                    <input name="avatarUrl" value={formData.avatarUrl || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" placeholder="https://..." />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Username</label>
-                    <input name="username" value={formData.username} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Current City</label>
-                    <input name="currentCity" value={formData.currentCity || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="col-span-full space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Bio</label>
-                    <textarea name="bio" value={formData.bio || ''} onChange={handleChange} rows={3} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">City of Birth</label>
-                    <input name="cityOfBirth" value={formData.cityOfBirth || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  {/* NEW FIELDS */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Birthday</label>
-                    <input type="date" name="birthday" value={formData.birthday || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Zodiac</label>
-                    <input name="zodiac" value={formData.zodiac || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Gender</label>
-                    <select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none">
-                      <option value="">Select...</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Non-binary">Non-binary</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Mother Tongue</label>
-                    <input name="motherTongue" value={formData.motherTongue || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                  <div className="col-span-full space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">School/College</label>
-                    <input name="school" value={formData.school || ''} onChange={handleChange} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none" />
-                  </div>
-                </div>
-                <div className="mt-8 flex justify-end">
-                  <Button onClick={handleSave} className="bg-white text-black hover:bg-gray-200 px-8 rounded-full font-bold">Save Changes</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-4">
-                <MatrixItem
-                  icon={Briefcase} label="Bio"
-                  value={currentUser.bio} colSpan="col-span-full"
-                />
-                <MatrixItem icon={Home} label="Current City" value={currentUser.currentCity} />
-                <MatrixItem icon={MapPin} label="City of Birth" value={currentUser.cityOfBirth} />
-                <MatrixItem icon={Cake} label="Birthday" value={currentUser.birthday} />
-                <MatrixItem icon={Ghost} label="Zodiac" value={currentUser.zodiac} />
-                <MatrixItem icon={UserIcon} label="Gender" value={currentUser.gender} />
-                <MatrixItem icon={Languages} label="Mother Tongue" value={currentUser.motherTongue} />
-                <MatrixItem
-                  icon={GraduationCap} label="School/College"
-                  value={currentUser.school} colSpan="col-span-full"
-                />
-              </div>
-            )}
-          </div>
-        )}
 
       </div>
 
-    </div>
+      {/* --- EDIT MODAL --- */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        currentUser={currentUser}
+        onSave={handleUserUpdate}
+      />
+    </>
   )
 }
