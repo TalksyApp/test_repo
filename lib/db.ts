@@ -18,7 +18,7 @@ export const db = {
   query: async (text: string, params: any[] = []) => {
     console.log('Executing query:', text)
     console.log('With params:', params)
-    
+
     const client = await pool.connect()
     try {
       const result = await client.query(text, params)
@@ -155,10 +155,18 @@ export async function initializeDatabase() {
         id TEXT PRIMARY KEY,
         post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        parent_id TEXT REFERENCES comments(id) ON DELETE CASCADE,
         content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `
+
+    // Safe Migration for parent_id
+    try {
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id TEXT REFERENCES comments(id) ON DELETE CASCADE`
+    } catch (e) {
+      console.log('Migration note: parent_id column might already exist or error', e)
+    }
 
     console.log("Database initialized successfully")
   } catch (error) {

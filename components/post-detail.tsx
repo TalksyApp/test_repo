@@ -42,7 +42,29 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
       const response = await fetch(`/api/posts/${post.id}/comments`);
       if (response.ok) {
         const data = await response.json();
-        setComments(data);
+
+        // Build Tree Structure from Flat List
+        const commentMap = new Map<string, Comment>();
+        const roots: Comment[] = [];
+
+        // 1. Create nodes
+        data.forEach((c: any) => {
+          commentMap.set(c.id, { ...c, replies: [] });
+        });
+
+        // 2. Link parents
+        data.forEach((c: any) => {
+          const node = commentMap.get(c.id);
+          if (node) {
+            if (c.parentId && commentMap.has(c.parentId)) {
+              commentMap.get(c.parentId)!.replies!.push(node);
+            } else {
+              roots.push(node);
+            }
+          }
+        });
+
+        setComments(roots);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -64,13 +86,14 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
         body: JSON.stringify({
           content: commentText,
           userId: currentUser.id
+          // No parentId = Top Level
         })
       });
 
       if (response.ok) {
         setCommentText('');
         await fetchComments();
-        // Scroll to bottom after adding
+        // Scroll to bottom after adding top-level comment
         setTimeout(() => {
           commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -82,27 +105,53 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
     }
   };
 
+  const handleInlineReply = async (parentId: string, content: string) => {
+    try {
+      const response = await fetch(`/api/posts/${post.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          userId: currentUser.id,
+          parentId // New Field for Threading
+        })
+      });
+
+      if (response.ok) {
+        await fetchComments();
+      }
+    } catch (error) {
+      console.error('Error replying:', error);
+    }
+  };
+
   const handleCommentLike = (commentId: string) => {
     // Current implementation only updates local state visually
-    // In a real app, this would be an API call
     setComments(comments.map(comment => {
-      if (comment.id === commentId) {
-        const isLiked = comment.likes.includes(currentUser.id);
-        const newLikes = isLiked
-          ? comment.likes.filter(id => id !== currentUser.id)
-          : [...comment.likes, currentUser.id];
-        return { ...comment, likes: newLikes };
-      }
-      return comment;
+      // Helper to update deeply nested comments
+      const updateNested = (c: Comment): Comment => {
+        if (c.id === commentId) {
+          const isLiked = c.likes && c.likes.includes(currentUser.id);
+          const newLikes = isLiked
+            ? (c.likes || []).filter(id => id !== currentUser.id)
+            : [...(c.likes || []), currentUser.id];
+          return { ...c, likes: newLikes };
+        }
+        if (c.replies) {
+          return { ...c, replies: c.replies.map(updateNested) };
+        }
+        return c;
+      };
+      return updateNested(comment);
     }));
   };
 
   return (
-    <div className="w-full h-full relative">
-      <div className="w-full h-full overflow-y-auto pt-10 pb-32 px-4 sm:px-8 animate-in fade-in slide-in-from-right-8 duration-500">
+    <div className="fixed inset-0 z-[100] w-full h-full bg-black md:bg-transparent md:relative md:inset-auto md:z-0 font-sans">
+      <div className="w-full h-full overflow-y-auto pt-10 pb-32 px-4 sm:px-8 animate-in fade-in slide-in-from-right-8 duration-500 scrollbar-hide">
 
         {/* HEADER */}
-        <div className="max-w-[1000px] mx-auto">
+        <div className="max-w-[800px] mx-auto">
           {/* Back Button */}
           <div className="flex items-center gap-4 mb-6">
             <button
@@ -115,7 +164,7 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
           </div>
 
           {/* MAIN POST CARD */}
-          <div className={`bg-[#0a0a0a]/80 backdrop-blur-sm border rounded-[32px] p-6 sm:p-8 mb-8 transition-all duration-300 relative overflow-hidden group
+          <div className={`bg-[#0a0a0a]/80 backdrop-blur-sm border rounded-[24px] p-6 sm:p-8 mb-8 transition-all duration-300 relative overflow-hidden group
                 ${isBoosted
               ? 'border-yellow-500/40 shadow-[0_0_40px_rgba(234,179,8,0.05)]'
               : 'border-white/10'}`
@@ -177,18 +226,15 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
 
           {/* COMMENTS SECTION */}
           <div className="relative">
-            <div className="flex items-center gap-2 mb-6 text-zinc-400 text-sm font-bold uppercase tracking-wider">
-              <MessageCircle size={16} /> Comments <span className="bg-white/10 px-2 py-0.5 rounded text-white text-xs">{comments.length}</span>
+            <div className="flex items-center gap-2 mb-6 text-zinc-500 text-xs font-bold uppercase tracking-wider ml-4">
+              All Comments ({comments.length})
             </div>
 
             {/* Thread Container */}
-            <div className="flex flex-col gap-4 relative">
-              {/* Main Thread Line */}
-              <div className="absolute left-4 top-0 bottom-0 w-px bg-white/5 hidden sm:block"></div>
-
+            <div className="flex flex-col gap-8 relative">
               {comments.length === 0 ? (
-                <div className="text-gray-500 text-center py-8 pl-8">
-                  No comments yet. Be the first to comment!
+                <div className="text-gray-500 text-center py-8">
+                  No comments yet. Start the conversation!
                 </div>
               ) : (
                 comments.map((comment, index) => (
@@ -197,7 +243,7 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
                     comment={comment}
                     currentUserId={currentUser.id}
                     onLike={handleCommentLike}
-                    onReply={(author) => setCommentText(`@${author} `)}
+                    onReply={handleInlineReply}
                   />
                 ))
               )}
@@ -207,9 +253,9 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
         </div>
       </div>
 
-      {/* FLOATING INPUT BAR */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent z-40 pointer-events-none">
-        <div className="max-w-[1000px] mx-auto bg-[#18181b] border border-white/10 rounded-full p-2 flex items-center shadow-2xl group focus-within:border-indigo-500/50 transition-colors pointer-events-auto">
+      {/* FLOATING TOP-LEVEL INPUT BAR */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent z-40 pointer-events-none">
+        <div className="max-w-[800px] mx-auto bg-[#18181b] border border-white/10 rounded-full p-2 flex items-center shadow-2xl group focus-within:border-indigo-500/50 transition-colors pointer-events-auto">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white ml-1 shrink-0">
             {currentUser.avatar_initials || currentUser.username[0]}
           </div>
@@ -218,7 +264,7 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
-            placeholder="Add a comment..."
+            placeholder="Add a top-level comment..."
             className="flex-1 bg-transparent border-none outline-none text-white px-4 text-sm placeholder-zinc-500"
           />
           <button

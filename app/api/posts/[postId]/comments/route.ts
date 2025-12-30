@@ -12,6 +12,7 @@ export async function GET(
       `SELECT 
         c.id,
         c.user_id,
+        c.parent_id,
         c.content,
         c.created_at,
         u.username,
@@ -27,6 +28,7 @@ export async function GET(
 
     const formattedComments = comments.rows.map((comment: any) => ({
       id: comment.id,
+      parentId: comment.parent_id || null,
       userId: comment.user_id,
       author: comment.username || 'Unknown',
       handle: `@${comment.username || 'unknown'}`,
@@ -52,12 +54,13 @@ export async function POST(
   try {
     const { postId } = await context.params
     const body = await request.json()
-    const { content, userId } = body
+    const { content, userId, parentId } = body
 
     console.log('=== CREATING COMMENT ===')
     console.log('Post ID:', postId)
     console.log('User ID:', userId)
     console.log('Content:', content)
+    console.log('Parent ID:', parentId)
     console.log('Full body:', body)
 
     if (!content || !userId) {
@@ -77,13 +80,13 @@ export async function POST(
 
     const commentId = `comment_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     console.log('Generated comment ID:', commentId)
-    
+
     console.log('Inserting comment into database...')
     const result = await db.query(
-      `INSERT INTO comments (id, post_id, user_id, content, created_at)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO comments (id, post_id, user_id, parent_id, content, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING id`,
-      [commentId, postId, userId, content]
+      [commentId, postId, userId, parentId || null, content]
     )
 
     console.log('Insert result:', result)
@@ -94,7 +97,7 @@ export async function POST(
     console.error("=== ERROR CREATING COMMENT ===")
     console.error("Error details:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace')
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: "Failed to create comment",
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })

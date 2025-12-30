@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { X, Save, Upload, User as UserIcon, Calendar, MapPin, Globe, Briefcase, GraduationCap } from "lucide-react"
+import React, { useState, useEffect, useRef } from "react"
+import { X, Save, Upload, User as UserIcon, Calendar, MapPin, Globe, Briefcase, GraduationCap, Camera, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { User } from "@/lib/storage"
 
@@ -16,6 +16,10 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
     const [formData, setFormData] = useState(currentUser)
     const [activeSection, setActiveSection] = useState<'basics' | 'details'>('basics')
 
+    // File Input Refs
+    const bannerInputRef = useRef<HTMLInputElement>(null)
+    const avatarInputRef = useRef<HTMLInputElement>(null)
+
     useEffect(() => {
         setFormData(currentUser)
     }, [currentUser])
@@ -25,6 +29,18 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
         setFormData((prev: any) => ({ ...prev, [name]: value }))
+    }
+
+    // Handle Image Uploads (Convert to Base64)
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'bannerUrl' | 'avatarUrl') => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setFormData((prev: any) => ({ ...prev, [field]: reader.result as string }))
+            }
+            reader.readAsDataURL(file)
+        }
     }
 
     const handleSave = () => {
@@ -82,58 +98,83 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onSave 
 
                     {activeSection === 'basics' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            {/* Images Preview & Edit */}
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                                        <Upload size={14} /> Banner URL
-                                    </label>
-                                    <input
-                                        name="bannerUrl"
-                                        value={formData.bannerUrl || ''}
-                                        onChange={handleChange}
-                                        className="w-full bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-gray-700 font-mono text-sm"
-                                        placeholder="https://..."
-                                    />
-                                    {formData.bannerUrl && (
-                                        <div className="h-24 w-full rounded-xl overflow-hidden border border-white/5 mt-2">
-                                            <img src={formData.bannerUrl} alt="Banner Preview" className="w-full h-full object-cover opacity-60" />
+
+                            {/* --- BANNER UPLOAD --- */}
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                                    <ImageIcon size={14} /> Profile Banner
+                                </label>
+                                <div
+                                    onClick={() => bannerInputRef.current?.click()}
+                                    className="h-32 w-full rounded-2xl bg-[#151518] border border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-[#1a1a1e] transition-all cursor-pointer relative overflow-hidden group"
+                                >
+                                    {formData.bannerUrl ? (
+                                        <>
+                                            <img src={formData.bannerUrl} alt="Banner Preview" className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="bg-black/60 backdrop-blur px-4 py-2 rounded-full text-white text-sm font-bold flex items-center gap-2">
+                                                    <Camera size={16} /> Change Banner
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-indigo-400 transition-colors">
+                                            <Upload size={24} className="mb-2" />
+                                            <span className="text-xs font-bold uppercase tracking-wider">Click to Upload Banner</span>
                                         </div>
                                     )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                                        <UserIcon size={14} /> Avatar URL
-                                    </label>
-                                    <div className="flex gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-[#151518] border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                                            {formData.avatarUrl ? (
-                                                <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-xl font-bold text-gray-600">{formData.username?.[0]}</span>
-                                            )}
-                                        </div>
-                                        <input
-                                            name="avatarUrl"
-                                            value={formData.avatarUrl || ''}
-                                            onChange={handleChange}
-                                            className="flex-1 bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-gray-700 font-mono text-sm h-12 my-auto"
-                                            placeholder="https://..."
-                                        />
-                                    </div>
+                                    <input
+                                        type="file"
+                                        ref={bannerInputRef}
+                                        onChange={(e) => handleFileUpload(e, 'bannerUrl')}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
                                 </div>
                             </div>
 
-                            {/* Name & Bio */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Username</label>
-                                    <input name="username" value={formData.username} onChange={handleChange} className="w-full bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none font-bold tracking-tight" />
+                            {/* --- AVATAR UPLOAD --- */}
+                            <div className="flex flex-col md:flex-row md:items-start gap-6">
+                                <div className="space-y-3 shrink-0 mx-auto md:mx-0 text-center md:text-left">
+                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center justify-center md:justify-start gap-2">
+                                        <UserIcon size={14} /> Avatar
+                                    </label>
+                                    <div
+                                        onClick={() => avatarInputRef.current?.click()}
+                                        className="w-24 h-24 rounded-[2rem] bg-[#151518] border border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-[#1a1a1e] transition-all cursor-pointer relative overflow-hidden group flex items-center justify-center mx-auto md:mx-0"
+                                    >
+                                        {formData.avatarUrl ? (
+                                            <>
+                                                <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover group-hover:opacity-40 transition-opacity" />
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Camera size={20} className="text-white drop-shadow-md" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center text-gray-500 group-hover:text-indigo-400">
+                                                <UserIcon size={24} />
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            ref={avatarInputRef}
+                                            onChange={(e) => handleFileUpload(e, 'avatarUrl')}
+                                            accept="image/*"
+                                            className="hidden"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Bio</label>
-                                    <textarea name="bio" value={formData.bio || ''} onChange={handleChange} rows={3} className="w-full bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none resize-none" placeholder="Tell the void about yourself..." />
+
+                                {/* Username & Bio */}
+                                <div className="flex-1 space-y-4 w-full">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Username</label>
+                                        <input name="username" value={formData.username} onChange={handleChange} className="w-full bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none font-bold tracking-tight" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Bio</label>
+                                        <textarea name="bio" value={formData.bio || ''} onChange={handleChange} rows={2} className="w-full bg-[#151518] border border-white/10 rounded-xl p-3 text-white focus:border-indigo-500 outline-none resize-none" placeholder="Tell the void about yourself..." />
+                                    </div>
                                 </div>
                             </div>
                         </div>

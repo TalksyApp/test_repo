@@ -26,9 +26,9 @@ interface DataCardProps {
 }
 
 const DataCard: React.FC<DataCardProps> = ({ icon: Icon, label, value, delay }) => (
-  <div className={`bg-[#121214]/60 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-500/30 hover:bg-[#1a1a1c]/80 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4 ${delay || ''}`}>
-    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all">
-      <Icon size={18} className="text-gray-400 group-hover:text-indigo-400 transition-colors" />
+  <div className={`bg-[#121214]/60 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-blue-500/30 hover:bg-[#1a1a1c]/80 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4 ${delay || ''}`}>
+    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-blue-500/20 group-hover:scale-110 transition-all">
+      <Icon size={18} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
     </div>
     <div>
       <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">{label}</div>
@@ -86,31 +86,27 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
       <div className="w-full flex-1 overflow-y-auto relative scrollbar-hide pb-32">
 
         {/* ================================================================================== */}
-        {/* MOBILE LAYOUT (Cinematic App View) - Visible only on Mobile */}
+        {/* HERO SECTION (SHARED & UNIFIED for Mobile/Desktop) */}
         {/* ================================================================================== */}
-        <div className="block md:hidden">
-          {/* --- HERO SECTION --- */}
-          <div className="relative w-full group">
+        <div className="relative w-full group">
+          {/* BANNER */}
+          <div className="h-48 md:h-80 w-full relative overflow-hidden">
+            {currentUser.bannerUrl ? (
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${currentUser.bannerUrl})` }}></div>
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-indigo-900 to-black"></div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent"></div>
+          </div>
 
-            {/* BANNER */}
-            <div className="h-48 md:h-64 w-full relative overflow-hidden">
-              {currentUser.bannerUrl ? (
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${currentUser.bannerUrl})` }}></div>
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-black"></div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-            </div>
-
-            {/* PROFILE HEADER INFO (Centered Layout) */}
-            <div className="max-w-4xl mx-auto px-6 relative z-10 flex flex-col items-center -mt-20 md:-mt-28 gap-6 text-center">
+          {/* PROFILE CONTENT WRAPPER */}
+          <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10 -mt-20 md:-mt-32">
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
 
               {/* AVATAR */}
               <div className="relative group/avatar shrink-0">
-                {/* Glow effect */}
-                <div className="hidden md:block absolute -inset-4 bg-indigo-500 rounded-full blur-2xl opacity-0 group-hover/avatar:opacity-30 transition-all duration-500"></div>
-
-                <div className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0e] border-[6px] border-black overflow-hidden relative z-10 shadow-2xl">
+                <div className="absolute -inset-4 bg-blue-500 rounded-[2.5rem] blur-2xl opacity-0 group-hover/avatar:opacity-40 transition-all duration-500"></div>
+                <div className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0c0e] border-[6px] border-[#050505] overflow-hidden relative z-10 shadow-2xl">
                   {currentUser.avatarUrl ? (
                     <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -121,191 +117,145 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
                 </div>
               </div>
 
-              {/* TEXT INFO (Name & Bio) */}
-              <div className="flex-1 w-full flex flex-col items-center">
-                <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-2 drop-shadow-xl">{currentUser.username}</h1>
-                <p className="text-gray-400 font-medium text-lg md:text-xl mb-4">@{currentUser.username?.toLowerCase() || "user"}</p>
+              {/* INFO & ACTIONS (Desktop Row) */}
+              <div className="flex-1 text-center md:text-left md:mb-4">
+                <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1 md:mb-2">{currentUser.username}</h1>
+                <p className="text-gray-400 font-medium text-lg md:text-xl">@{currentUser.username?.toLowerCase() || "user"}</p>
+              </div>
 
-                {currentUser.bio && (
-                  <p className="text-gray-300 text-sm md:text-base max-w-lg mx-auto leading-relaxed opacity-90 mb-6">{currentUser.bio}</p>
-                )}
-
-                {/* STATS */}
-                <div className="flex items-center justify-center gap-10 md:gap-12 mb-8">
-                  <div className="text-center group cursor-pointer hover:scale-105 transition-transform">
-                    <div className="text-2xl md:text-3xl font-black text-white tracking-tight">{userPosts.length}</div>
-                    <div className="text-[10px] md:text-xs uppercase font-bold text-gray-500 tracking-widest mt-1 group-hover:text-indigo-400">Posts</div>
-                  </div>
-                  <div className="text-center group cursor-pointer hover:scale-105 transition-transform">
-                    <div className="text-2xl md:text-3xl font-black text-white tracking-tight">0</div>
-                    <div className="text-[10px] md:text-xs uppercase font-bold text-gray-500 tracking-widest mt-1 group-hover:text-indigo-400">Connections</div>
-                  </div>
-                </div>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex gap-4 w-full md:w-auto justify-center">
-                  <Button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="h-12 md:h-14 rounded-full bg-white text-black font-bold hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] px-10 text-base hover:scale-105 active:scale-95"
-                  >
-                    Edit Profile
-                  </Button>
-                  <Button size="icon" className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5 backdrop-blur-md hover:scale-105 active:scale-95 transition-all">
-                    <Share2 size={22} />
-                  </Button>
-                </div>
+              {/* ACTION BUTTONS (Desktop) */}
+              <div className="hidden md:flex items-center gap-4 mb-6">
+                <Button onClick={() => setIsEditModalOpen(true)} className="h-12 rounded-full bg-white text-black font-bold hover:bg-zinc-200 px-8">
+                  Edit Profile
+                </Button>
+                <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5">
+                  <Share2 size={20} />
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* --- TABS (Capsule Style) --- */}
-          <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-xl py-4 flex justify-center mt-2">
-            <div className="flex p-1 bg-white/5 border border-white/5 rounded-full relative">
-              <button
-                onClick={() => setActiveTab('posts')}
-                className={`px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${activeTab === 'posts' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' : 'text-gray-500 hover:text-white'}`}
-              >
-                Broadcasts
-              </button>
-              <button
-                onClick={() => setActiveTab('identity')}
-                className={`px-8 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 flex items-center gap-2 ${activeTab === 'identity' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' : 'text-gray-500 hover:text-white'}`}
-              >
-                Identity Matrix
-              </button>
+            {/* BIO (Mobile Only - Desktop has it in sidebar) */}
+            <div className="md:hidden mt-6 text-center">
+              {currentUser.bio && <p className="text-gray-300 text-sm opacity-90 leading-relaxed">{currentUser.bio}</p>}
+
+              {/* Mobile Stats */}
+              <div className="flex items-center justify-center gap-10 mt-6 mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">{userPosts.length}</div>
+                  <div className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mt-1">Posts</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">0</div>
+                  <div className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mt-1">Connections</div>
+                </div>
+              </div>
+
+              {/* Mobile Actions */}
+              <div className="flex gap-4 justify-center mb-8">
+                <Button onClick={() => setIsEditModalOpen(true)} className="flex-1 h-12 rounded-full bg-white text-black font-bold">Edit Profile</Button>
+                <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white"><Share2 size={20} /></Button>
+              </div>
             </div>
-          </div>
-
-          {/* --- CONTENT AREA --- */}
-          <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 min-h-[500px]">
-
-            {/* POSTS TAB */}
-            {activeTab === 'posts' && (
-              <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
-                {userPosts.length > 0 ? (
-                  userPosts.map(post => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      currentUser={currentUser}
-                      onClick={() => router.push(`/post/${post.id}`)}
-                      onComment={() => router.push(`/post/${post.id}`)}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-20 border border-dashed border-white/10 rounded-[32px] bg-white/5">
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Grid className="text-gray-500" />
-                    </div>
-                    <div className="text-lg font-medium text-white">No transmissions yet</div>
-                    <div className="text-sm text-gray-500">Static silence...</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* IDENTITY TAB */}
-            {activeTab === 'identity' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                <DataCard icon={Briefcase} label="Bio Status" value={currentUser.bio || "Unknown"} delay="duration-300" />
-                <DataCard icon={Home} label="Current City" value={currentUser.currentCity} delay="duration-400" />
-                <DataCard icon={MapPin} label="Origin" value={currentUser.cityOfBirth} delay="duration-500" />
-                <DataCard icon={Cake} label="Cycle Start" value={currentUser.birthday} delay="duration-600" />
-                <DataCard icon={Ghost} label="Zodiac" value={currentUser.zodiac} delay="duration-700" />
-                <DataCard icon={UserIcon} label="Gender" value={currentUser.gender} delay="duration-800" />
-                <DataCard icon={Languages} label="Tongue" value={currentUser.motherTongue} delay="duration-900" />
-                <DataCard icon={GraduationCap} label="Academia" value={currentUser.school} delay="duration-1000" />
-              </div>
-            )}
           </div>
         </div>
 
 
         {/* ================================================================================== */}
-        {/* DESKTOP LAYOUT (Reddit Style) - Visible only on Desktop */}
+        {/* CONTENT GRID (Desktop Layout) */}
         {/* ================================================================================== */}
-        <div className="hidden md:grid grid-cols-12 gap-4 max-w-[1100px] mx-auto mt-8 px-6 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 md:grid-cols-12 gap-8">
 
-          {/* --- LEFT COL: FEED & TABS --- */}
-          <div className={`${activeTab === 'posts' ? 'col-span-12 max-w-3xl mx-auto w-full' : 'col-span-8'}`}>
+          {/* --- LEFT COL: IDENTITY SIDEBAR (Desktop) --- */}
+          <div className="hidden md:flex col-span-4 flex-col gap-6">
 
-            {/* Sticky Header: Title + Tabs */}
-            <div className="sticky top-0 z-30 bg-black/60 backdrop-blur-xl -mx-6 px-6 pt-8 pb-4 mb-6 rounded-b-[2rem]">
-              {/* Page Title */}
-              <div className="mb-6">
-                <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter">Profile</h1>
+            {/* About Card */}
+            <div className="bg-black/40 backdrop-blur-xl border border-white/5 rounded-[32px] p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Grid size={18} className="text-blue-500" /> Identity Matrix
+              </h3>
+
+              {currentUser.bio && (
+                <div className="mb-6 pb-6 border-b border-white/5">
+                  <p className="text-gray-300 leading-relaxed">{currentUser.bio}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-gray-400">
+                  <MapPin size={16} /> <span className="text-sm">{currentUser.currentCity || "Unknown Loc"}</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-400">
+                  <Briefcase size={16} /> <span className="text-sm">{currentUser.bio || "Digital Nomad"}</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-400">
+                  <Ghost size={16} /> <span className="text-sm">{currentUser.zodiac || "Unknown Sign"}</span>
+                </div>
               </div>
 
-              {/* Desktop Capsule Tabs */}
-              <div className="flex items-center gap-3 transition-all overflow-x-auto scrollbar-hide">
-                {['overview', 'posts', 'comments', 'saved'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-2.5 rounded-full text-sm font-bold capitalize tracking-wide transition-all duration-200 shrink-0 ${activeTab === tab
-                      ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.15)] scale-105'
-                      : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-                      }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="flex gap-4 mt-8 pt-6 border-t border-white/5">
+                <div>
+                  <div className="text-xl font-black text-white">{userPosts.length}</div>
+                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Posts</div>
+                </div>
+                <div>
+                  <div className="text-xl font-black text-white">0</div>
+                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Friends</div>
+                </div>
               </div>
             </div>
 
-            {/* Feed Content */}
-            <div className="space-y-4">
-              {(activeTab === 'posts' || activeTab === 'overview') ? (
-                userPosts.length > 0 ? (
-                  userPosts.map(post => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      currentUser={currentUser}
-                      onClick={() => router.push(`/post/${post.id}`)}
-                      onComment={() => router.push(`/post/${post.id}`)}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-32 border border-dashed border-white/10 rounded-2xl bg-[#0c0c0e]">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Grid className="text-gray-500 w-8 h-8" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No broadcasts yet</h3>
-                    <p className="text-gray-500">When you post, it will show up here.</p>
-                    <Button onClick={() => onNavigate('create')} className="mt-6 rounded-full bg-white text-black hover:bg-gray-200">Create Post</Button>
-                  </div>
-                )
+            {/* Badges / Extra (Placeholder) */}
+            <div className="bg-black/40 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 h-48 flex items-center justify-center text-gray-600 font-medium">
+              Identity Badges Coming Soon
+            </div>
+          </div>
+
+
+          {/* --- RIGHT COL: FEED --- */}
+          <div className="col-span-1 md:col-span-8">
+
+            {/* Tabs */}
+            <div className="flex items-center gap-3 mb-6 overflow-x-auto scrollbar-hide pb-2">
+              {['posts', 'media', 'likes'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-2.5 rounded-full text-sm font-bold capitalize tracking-wide transition-all duration-200 shrink-0 ${activeTab === tab
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/20'
+                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Posts Feed */}
+            <div className="space-y-4 pb-20">
+              {userPosts.length > 0 ? (
+                userPosts.map(post => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUser={currentUser}
+                    onClick={() => router.push(`/post/${post.id}`)}
+                    onComment={() => router.push(`/post/${post.id}`)}
+                  />
+                ))
               ) : (
-                /* Placeholder for other tabs */
-                <div className="text-center py-32 border border-dashed border-white/10 rounded-2xl bg-[#0c0c0e]">
-                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                    {activeTab === 'comments' && <MessageCircle className="text-gray-500 w-8 h-8" />}
-                    {activeTab === 'saved' && <List className="text-gray-500 w-8 h-8" />}
+                <div className="text-center py-24 border border-dashed border-white/10 rounded-[32px] bg-white/5">
+                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Grid className="text-gray-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">No {activeTab} yet</h3>
-                  <p className="text-gray-500 text-sm">Check back later for updates.</p>
+                  <h3 className="text-lg font-bold text-white mb-1">No Broadcasts</h3>
+                  <p className="text-gray-500 text-sm">Signal is silent.</p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* --- RIGHT COL: SIDEBAR --- */}
-          {activeTab !== 'posts' && (
-            <div className="col-span-4 h-fit">
-              <ProfileSidebar
-                currentUser={currentUser}
-                userPostsCount={userPosts.length}
-                onEdit={() => setIsEditModalOpen(true)}
-              />
-            </div>
-          )}
-
         </div>
-
       </div>
 
-      {/* --- EDIT MODAL --- */}
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

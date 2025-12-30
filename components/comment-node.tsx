@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { MoreHorizontal, Heart, MessageCircle, CornerDownRight } from 'lucide-react';
+import { MoreHorizontal, Heart, MessageCircle, Send, User } from 'lucide-react';
 
 export interface Comment {
     id: string;
@@ -20,18 +20,20 @@ interface CommentNodeProps {
     depth?: number;
     currentUserId: string;
     onLike?: (id: string) => void;
-    onReply?: (author: string) => void;
+    onReply?: (parentId: string, content: string) => void;
 }
 
 export default function CommentNode({ comment, depth = 0, currentUserId, onLike, onReply }: CommentNodeProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const hasReplies = comment.replies && comment.replies.length > 0;
+    const [isReplying, setIsReplying] = useState(false);
+    const [replyText, setReplyText] = useState("");
 
-    // Check if current user liked this comment
+    const hasReplies = comment.replies && comment.replies.length > 0;
     const isLiked = comment.likes && comment.likes.includes(currentUserId);
     const likeCount = comment.likes ? comment.likes.length : 0;
+    const isTopLevel = depth === 0;
 
-    // Format relative time (basic implementation)
+    // Time formatting
     const timeAgo = (timestamp: number) => {
         const seconds = Math.floor((Date.now() - timestamp) / 1000);
         if (seconds < 60) return `${seconds}s`;
@@ -42,119 +44,140 @@ export default function CommentNode({ comment, depth = 0, currentUserId, onLike,
         return Math.floor(hours / 24) + 'd';
     };
 
+    const handleReplySubmit = () => {
+        if (!replyText.trim() || !onReply) return;
+        onReply(comment.id, replyText);
+        setReplyText("");
+        setIsReplying(false);
+        setIsCollapsed(false); // Ensure we see the reply
+    };
+
     return (
-        <div className={`relative ${depth > 0 ? 'ml-8 sm:ml-12' : ''} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
+        <div className={`relative flex flex-col ${depth > 0 ? 'mt-4' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
 
-            {/* CONNECTION LINES (Aesthetic Tree) */}
-            {depth > 0 && (
-                <>
-                    {/* Vertical Line from Parent */}
-                    <div className="absolute -left-8 sm:-left-12 top-0 w-px h-full bg-gradient-to-b from-white/10 to-transparent group-hover:from-indigo-500/30 transition-colors duration-500"></div>
-                    {/* Curved Connector */}
-                    <div className="absolute -left-8 sm:-left-12 top-8 w-8 sm:w-12 h-6 border-b border-l border-white/10 rounded-bl-3xl group-hover:border-indigo-500/30 transition-colors duration-500"></div>
-                </>
-            )}
+            {/* Thread Line (Left side) - Only for nested items or if it has children? 
+                Actually, standard Reddit style:
+                The line belongs to the PARENT's container, but here we are recursive.
+                So we draw a line on the LEFT of the children container.
+            */}
 
-            <div className="group relative">
-                {/* Comment Card */}
-                <div className={`
-                    relative overflow-hidden rounded-[24px] p-5 transition-all duration-300
-                    border border-white/5 bg-[#0c0c0e]/80 backdrop-blur-md
-                    hover:border-white/10 hover:bg-[#121214] hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]
-                    ${isCollapsed ? 'opacity-60' : ''}
-                `}>
-
-                    {/* Glow Effect on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-3 relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/5 flex items-center justify-center text-sm font-bold text-white shadow-inner shrink-0">
-                                {comment.avatar}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-white text-[15px] tracking-wide hover:text-indigo-400 cursor-pointer transition-colors">
-                                        {comment.author}
-                                    </span>
-                                    {comment.author === "Design_God" && ( // Example of a badge logic
-                                        <div className="bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded text-[9px] font-bold text-indigo-400 uppercase tracking-wider">
-                                            Author
-                                        </div>
-                                    )}
-                                </div>
-                                <span className="text-xs text-zinc-500 font-medium">{timeAgo(comment.timestamp)}</span>
-                            </div>
+            <div className="flex gap-3">
+                {/* Avatar / Collapse Column */}
+                <div className="flex flex-col items-center shrink-0">
+                    {!isCollapsed ? (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-sm cursor-pointer hover:border-white/20 transition-colors"
+                            onClick={() => setIsCollapsed(true)}>
+                            {comment.avatar || <User size={14} />}
                         </div>
+                    ) : (
+                        <div className="w-8 h-8 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-indigo-400 transition-colors"
+                            onClick={() => setIsCollapsed(false)}>
+                            <MoreHorizontal size={18} />
+                        </div>
+                    )}
 
-                        {/* Collapse Toggle */}
-                        <button
-                            onClick={() => setIsCollapsed(!isCollapsed)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 text-zinc-600 hover:text-white transition-colors"
-                        >
-                            {isCollapsed ? <MoreHorizontal size={16} /> : <div className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-zinc-400 transition-colors"></div>}
-                        </button>
+                    {/* Interactive Thread Line */}
+                    {!isCollapsed && (hasReplies || isReplying) && (
+                        <div
+                            className="w-0.5 grow bg-zinc-800/50 hover:bg-indigo-500 cursor-pointer transition-colors mt-2 rounded-full min-h-[20px]"
+                            onClick={() => setIsCollapsed(true)}
+                        />
+                    )}
+                </div>
+
+                {/* Content Column */}
+                <div className="flex-1 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-white text-[14px] hover:underline cursor-pointer">
+                            {comment.author}
+                        </span>
+                        {comment.author === "Design_God" && (
+                            <span className="bg-indigo-500/20 text-indigo-300 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                                OP
+                            </span>
+                        )}
+                        <span className="text-zinc-500 text-xs">• {timeAgo(comment.timestamp)}</span>
                     </div>
 
-                    {/* Content */}
                     {!isCollapsed && (
-                        <div className="relative z-10">
-                            <p className="text-zinc-300 text-[15px] leading-relaxed pl-[52px] font-light">
+                        <>
+                            {/* Text */}
+                            <div className="text-zinc-300 text-[15px] leading-relaxed font-light break-words">
                                 {comment.content}
-                            </p>
+                            </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-6 mt-4 pl-[52px]">
+                            {/* Actions Bar */}
+                            <div className="flex items-center gap-4 mt-2">
+                                {/* Like */}
                                 <button
                                     onClick={() => onLike && onLike(comment.id)}
-                                    className={`flex items-center gap-2 transition-all duration-300 text-xs font-semibold group/btn 
-                                        ${isLiked
-                                            ? 'text-pink-500'
-                                            : 'text-zinc-500 hover:text-pink-400'
-                                        }`}
+                                    className="flex items-center gap-1.5 text-zinc-500 hover:text-pink-500 transition-colors group"
                                 >
-                                    <div className={`p-1.5 rounded-full transition-colors ${isLiked ? 'bg-pink-500/10' : 'group-hover/btn:bg-pink-500/10'}`}>
-                                        <Heart size={16} className={`transition-transform duration-300 ${isLiked ? 'fill-current scale-110' : 'group-hover/btn:scale-110'}`} />
-                                    </div>
-                                    <span>{likeCount || "Like"}</span>
+                                    <Heart size={16} className={`transition-transform duration-200 ${isLiked ? 'fill-pink-500 text-pink-500' : 'group-hover:scale-110'}`} />
+                                    <span className={`text-xs font-medium ${isLiked ? 'text-pink-500' : ''}`}>{likeCount || "Vote"}</span>
                                 </button>
 
+                                {/* Reply Toggle */}
                                 <button
-                                    onClick={() => onReply && onReply(comment.author)}
-                                    className="flex items-center gap-2 text-zinc-500 hover:text-indigo-400 transition-all duration-300 text-xs font-semibold group/reply"
+                                    onClick={() => setIsReplying(!isReplying)}
+                                    className="flex items-center gap-1.5 text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider"
                                 >
-                                    <div className="p-1.5 rounded-full group-hover/reply:bg-indigo-500/10 transition-colors">
-                                        <MessageCircle size={16} />
-                                    </div>
+                                    <MessageCircle size={16} />
                                     Reply
                                 </button>
+
+                                <button className="text-zinc-600 hover:text-zinc-400 transition-colors">
+                                    <MoreHorizontal size={16} />
+                                </button>
                             </div>
-                        </div>
+
+                            {/* Inline Reply Input */}
+                            {isReplying && (
+                                <div className="mt-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    {/* Line connecting to input */}
+                                    <div className="w-[2px] h-full absolute -left-[19px] top-8 bg-zinc-800" />
+
+                                    <div className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-xl p-1 flex items-center shadow-lg focus-within:border-indigo-500/50 transition-colors">
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleReplySubmit()}
+                                            placeholder={`Reply to ${comment.author}...`}
+                                            className="flex-1 bg-transparent border-none outline-none text-white text-sm px-3 py-2 min-w-0 placeholder-zinc-600"
+                                        />
+                                        <button
+                                            onClick={handleReplySubmit}
+                                            disabled={!replyText.trim()}
+                                            className={`p-2 rounded-lg font-bold transition-all ${replyText.trim() ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'text-zinc-600 cursor-not-allowed'}`}
+                                        >
+                                            <Send size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Nested Replies Container */}
+                            {hasReplies && (
+                                <div className="mt-2">
+                                    {comment.replies!.map(reply => (
+                                        <CommentNode
+                                            key={reply.id}
+                                            comment={reply}
+                                            depth={depth + 1}
+                                            currentUserId={currentUserId}
+                                            onLike={onLike}
+                                            onReply={onReply}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
-
-            {/* Nested Replies */}
-            {!isCollapsed && hasReplies && (
-                <div className="mt-4 relative">
-                    {/* Vertical Thread Line for Children */}
-                    <div className="absolute -left-8 sm:-left-12 top-0 bottom-6 w-px bg-gradient-to-b from-white/10 to-transparent"></div>
-
-                    <div className="flex flex-col gap-4">
-                        {comment.replies!.map(reply => (
-                            <CommentNode
-                                key={reply.id}
-                                comment={reply}
-                                depth={depth + 1}
-                                currentUserId={currentUserId}
-                                onLike={onLike}
-                                onReply={onReply}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
-};
+}
