@@ -14,6 +14,7 @@ export interface User {
   avatar_initials?: string
   avatarUrl?: string
   bannerUrl?: string
+  followedTopics?: string[] // List of topic IDs/Names followed by the user
 }
 
 export interface Post {

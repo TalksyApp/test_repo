@@ -27,6 +27,8 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string, author: string } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const isBoosted = post.isPromoted || post.isBoosted;
@@ -75,28 +77,39 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
     fetchComments();
   }, [post.id]);
 
-  const handleSubmitComment = async () => {
+  const handleSubmit = async () => {
     if (!commentText.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
+      // Determine if Top Level or Reply
+      const payload: any = {
+        content: commentText,
+        userId: currentUser.id
+      };
+
+      if (replyingTo) {
+        payload.parentId = replyingTo.id;
+      }
+
       const response = await fetch(`/api/posts/${post.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: commentText,
-          userId: currentUser.id
-          // No parentId = Top Level
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         setCommentText('');
+        setReplyingTo(null); // Reset reply state
         await fetchComments();
-        // Scroll to bottom after adding top-level comment
-        setTimeout(() => {
-          commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+
+        // Scroll logic: If top level, scroll to bottom. If reply, maybe stay put?
+        // For now, keep simple.
+        if (!replyingTo) {
+          setTimeout(() => {
+            commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
       }
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -105,25 +118,17 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
     }
   };
 
-  const handleInlineReply = async (parentId: string, content: string) => {
-    try {
-      const response = await fetch(`/api/posts/${post.id}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          userId: currentUser.id,
-          parentId // New Field for Threading
-        })
-      });
-
-      if (response.ok) {
-        await fetchComments();
+  // Handler passed to CommentNode
+  const handleReplyClick = (id: string, author: string) => {
+    if (replyingTo?.id === id) {
+      setReplyingTo(null); // Toggle off if clicking active
+    } else {
+      setReplyingTo({ id, author });
+      if (inputRef.current) {
+        inputRef.current.focus();
       }
-    } catch (error) {
-      console.error('Error replying:', error);
     }
-  };
+  }
 
   const handleCommentLike = (commentId: string) => {
     // Current implementation only updates local state visually
@@ -243,7 +248,8 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
                     comment={comment}
                     currentUserId={currentUser.id}
                     onLike={handleCommentLike}
-                    onReply={handleInlineReply}
+                    onReplyClick={handleReplyClick}
+                    activeReplyId={replyingTo?.id}
                   />
                 ))
               )}
@@ -253,22 +259,40 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
         </div>
       </div>
 
-      {/* FLOATING TOP-LEVEL INPUT BAR */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent z-40 pointer-events-none">
-        <div className="max-w-[800px] mx-auto bg-[#18181b] border border-white/10 rounded-full p-2 flex items-center shadow-2xl group focus-within:border-indigo-500/50 transition-colors pointer-events-auto">
+      {/* UNIFIED BOTTOM INPUT BAR */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent z-40 transition-all duration-300">
+
+        {/* Reply Context Banner */}
+        {replyingTo && (
+          <div className="max-w-[800px] mx-auto mb-2 flex items-center justify-between px-4 py-2 bg-[#18181b] border border-white/10 rounded-t-2xl rounded-b-lg border-b-0 animate-in slide-in-from-bottom-5 fade-in duration-300">
+            <div className="flex items-center gap-2 text-sm text-zinc-400">
+              <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
+              Replying to <span className="text-white font-bold">@{replyingTo.author}</span>
+            </div>
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <div className="text-xs font-bold">CANCEL</div>
+            </button>
+          </div>
+        )}
+
+        <div className={`max-w-[800px] mx-auto bg-[#18181b] border border-white/10 rounded-3xl p-2 flex items-center shadow-2xl group focus-within:border-indigo-500/50 transition-colors ${replyingTo ? 'rounded-t-sm' : ''}`}>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white ml-1 shrink-0">
             {currentUser.avatar_initials || currentUser.username[0]}
           </div>
           <input
+            ref={inputRef}
             type="text"
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
-            placeholder="Add a top-level comment..."
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            placeholder={replyingTo ? `Reply to ${replyingTo.author}...` : "Add a top-level comment..."}
             className="flex-1 bg-transparent border-none outline-none text-white px-4 text-sm placeholder-zinc-500"
           />
           <button
-            onClick={handleSubmitComment}
+            onClick={handleSubmit}
             disabled={!commentText.trim() || isSubmitting}
             className={`p-2 rounded-full font-bold text-xs transition-all duration-300 ${commentText.trim() ? 'bg-white text-black hover:scale-105' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
           >
@@ -279,3 +303,4 @@ export default function PostDetail({ post, currentUser, onBack, onLike }: PostDe
     </div>
   );
 }
+

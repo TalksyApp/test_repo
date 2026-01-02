@@ -202,7 +202,7 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
 
   return (
     <>
-      <div className="w-full pt-6 md:pt-10 pb-32 px-4 md:px-8 animate-in fade-in duration-500 overflow-y-auto h-full">
+      <div className="w-full pt-6 md:pt-10 pb-32 px-4 md:px-8 animate-in fade-in duration-500">
 
         {/* HEADER */}
         <div className="mb-8 md:mb-12 flex flex-col items-start w-full max-w-[1200px]">
@@ -251,6 +251,10 @@ export default function FeedPage({ currentUser, onNavigate }: FeedPageProps) {
       <UserPopup
         user={selectedUser}
         onClose={() => setSelectedUser(null)}
+        onViewProfile={() => {
+          const username = selectedUser?.handle?.replace('@', '') || selectedUser?.author;
+          if (username) router.push(`/user/${username}`);
+        }}
       />
 
       <button

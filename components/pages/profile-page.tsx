@@ -8,14 +8,15 @@ import EditProfileModal from "@/components/edit-profile-modal"
 import ProfileSidebar from "@/components/profile-sidebar"
 import {
   MapPin, Cake, Ghost, Languages, User as UserIcon, GraduationCap,
-  Home, Briefcase, Edit3, Grid, List, LucideIcon, Share2, MessageCircle
+  Home, Briefcase, Edit3, Grid, List, LucideIcon, Share2, MessageCircle, UserPlus
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface ProfilePageProps {
   currentUser: any;
-  onUserUpdate: (user: User) => void;
+  onUserUpdate?: (user: User) => void;
   onNavigate: (page: string, data?: any) => void;
+  isReadOnly?: boolean;
 }
 
 interface DataCardProps {
@@ -37,26 +38,29 @@ const DataCard: React.FC<DataCardProps> = ({ icon: Icon, label, value, delay }) 
   </div>
 );
 
-export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: ProfilePageProps) {
+export default function ProfilePage({ currentUser, onUserUpdate, onNavigate, isReadOnly = false }: ProfilePageProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<string>('posts')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [userPosts, setUserPosts] = useState<Post[]>([])
+  const [suggestedPosts, setSuggestedPosts] = useState<Post[]>([])
 
   useEffect(() => {
-    // Fetch user's posts
-    const fetchPosts = async () => {
+    // Fetch user's posts & Suggestions
+    const fetchContent = async () => {
       try {
-        const response = await fetch(`/api/posts?userId=${currentUser.id}`)
-        if (response.ok) {
-          const data = await response.json()
-          // Transform API response
-          const transformedPosts = data.map((post: any) => ({
+        // 1. Fetch Target User's Posts
+        const userRes = await fetch(`/api/posts?userId=${currentUser.id}`)
+        let myPosts: Post[] = []
+
+        if (userRes.ok) {
+          const data = await userRes.json()
+          myPosts = data.map((post: any) => ({
             id: post.id,
             userId: post.user_id || '',
             content: post.content,
             timestamp: new Date(post.created_at).getTime(),
-            likes: post.likes_count || 0,
+            likes: [], // Fixed type: string[]
             replies: [],
             comments: post.comments_count || 0,
             author: post.username,
@@ -65,20 +69,87 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
             tags: post.tags || [],
             isBoosted: post.is_boosted || false,
             isLikedByUser: post.is_liked_by_user || false
-          }))
-          const myPosts = transformedPosts.filter((p: Post) => p.userId === currentUser.id);
-          setUserPosts(myPosts)
+          })).filter((p: Post) => p.userId === currentUser.id);
         }
+
+        // MOCK DATA: Ensure alex_void has content for demo
+        if (currentUser.username === 'alex_void' && myPosts.length === 0) {
+          myPosts = [
+            {
+              id: 'mock-av-1',
+              userId: currentUser.id,
+              content: 'The digital horizon is infinite. We are just packets of data floating in the stream. 🌌 #Void #Cyberpunk',
+              timestamp: Date.now() - 7200000,
+              likes: ['mock1'],
+              replies: [],
+              comments: 12,
+              author: 'alex_void',
+              handle: '@alex_void',
+              avatar: currentUser.avatar_initials || 'AV',
+              tags: ['Void', 'Cyberpunk'],
+              isBoosted: true,
+              isLikedByUser: true
+            },
+            {
+              id: 'mock-av-2',
+              userId: currentUser.id,
+              content: 'Searching for signals in the noise. Who else is out there?',
+              timestamp: Date.now() - 86400000,
+              likes: [],
+              replies: [],
+              comments: 3,
+              author: 'alex_void',
+              handle: '@alex_void',
+              avatar: currentUser.avatar_initials || 'AV',
+              tags: ['Signal'],
+              isBoosted: false,
+              isLikedByUser: false
+            }
+          ] as any;
+        }
+        setUserPosts(myPosts)
+
+        // 2. Fetch Suggested Posts (Only if ReadOnly/Public View)
+        if (isReadOnly) {
+          const globalRes = await fetch('/api/posts')
+          if (globalRes.ok) {
+            const globalData = await globalRes.json()
+            const suggestions = globalData
+              .map((post: any) => ({
+                id: post.id,
+                userId: post.user_id || '',
+                content: post.content,
+                timestamp: new Date(post.created_at).getTime(),
+                likes: post.likes_count || 0,
+                replies: [],
+                comments: post.comments_count || 0,
+                author: post.username,
+                handle: `@${post.username}`,
+                avatar: post.avatar_initials || post.username[0],
+                tags: post.tags || [],
+                isBoosted: post.is_boosted || false,
+                isLikedByUser: post.is_liked_by_user || false
+              }))
+              .filter((p: Post) => p.userId !== currentUser.id) // Exclude current profile's posts
+              .sort(() => 0.5 - Math.random()) // Shuffle for "Discovery" feel
+              .slice(0, 10); // Take top 10
+
+            setSuggestedPosts(suggestions)
+          }
+        }
+
       } catch (error) {
-        console.error("Error fetching user posts:", error)
+        console.error("Error fetching content:", error)
       }
     }
-    fetchPosts()
-  }, [currentUser.id])
+    fetchContent()
+  }, [currentUser.id, isReadOnly])
 
   const handleUserUpdate = (updatedUser: any) => {
     storage.setCurrentUser(updatedUser)
-    onUserUpdate(updatedUser)
+    if (onUserUpdate) {
+      onUserUpdate(updatedUser)
+    }
   }
 
   return (
@@ -125,12 +196,28 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
 
               {/* ACTION BUTTONS (Desktop) */}
               <div className="hidden md:flex items-center gap-4 mb-6">
-                <Button onClick={() => setIsEditModalOpen(true)} className="h-12 rounded-full bg-white text-black font-bold hover:bg-zinc-200 px-8">
-                  Edit Profile
-                </Button>
-                <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5">
-                  <Share2 size={20} />
-                </Button>
+                {onUserUpdate && !isReadOnly ? (
+                  <>
+                    <Button onClick={() => setIsEditModalOpen(true)} className="h-12 rounded-full bg-white text-black font-bold hover:bg-zinc-200 px-8">
+                      Edit Profile
+                    </Button>
+                    <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5">
+                      <Share2 size={20} />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button className="h-12 rounded-full bg-white text-black font-bold hover:bg-zinc-200 px-8 flex items-center gap-2">
+                      <UserPlus size={18} /> Connect
+                    </Button>
+                    <Button className="h-12 rounded-full bg-white/10 text-white font-bold hover:bg-white/20 px-8 flex items-center gap-2 border border-white/5">
+                      <MessageCircle size={18} /> Message
+                    </Button>
+                    <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/5">
+                      <Share2 size={20} />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -152,8 +239,21 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
 
               {/* Mobile Actions */}
               <div className="flex gap-4 justify-center mb-8">
-                <Button onClick={() => setIsEditModalOpen(true)} className="flex-1 h-12 rounded-full bg-white text-black font-bold">Edit Profile</Button>
-                <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white"><Share2 size={20} /></Button>
+                {onUserUpdate && !isReadOnly ? (
+                  <>
+                    <Button onClick={() => setIsEditModalOpen(true)} className="flex-1 h-12 rounded-full bg-white text-black font-bold">Edit Profile</Button>
+                    <Button size="icon" className="h-12 w-12 rounded-full bg-white/10 text-white"><Share2 size={20} /></Button>
+                  </>
+                ) : (
+                  <>
+                    <Button className="flex-1 h-12 rounded-full bg-white text-black font-bold flex items-center justify-center gap-2">
+                      <UserPlus size={18} /> Connect
+                    </Button>
+                    <Button className="flex-1 h-12 rounded-full bg-white/10 text-white font-bold flex items-center justify-center gap-2 border border-white/5">
+                      <MessageCircle size={18} /> Message
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -230,19 +330,49 @@ export default function ProfilePage({ currentUser, onUserUpdate, onNavigate }: P
               ))}
             </div>
 
-            {/* Posts Feed */}
-            <div className="space-y-4 pb-20">
-              {userPosts.length > 0 ? (
-                userPosts.map(post => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUser={currentUser}
-                    onClick={() => router.push(`/post/${post.id}`)}
-                    onComment={() => router.push(`/post/${post.id}`)}
-                  />
-                ))
-              ) : (
+            {/* Posts Feed (Scrollable Box on Desktop) */}
+            <div className="space-y-4 pb-20 md:pb-0 md:bg-black/40 md:backdrop-blur-xl md:border md:border-white/5 md:rounded-[32px] md:p-6 md:h-[600px] md:overflow-y-auto md:scrollbar-hide">
+              {userPosts.map(post => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={currentUser}
+                  onClick={() => router.push(`/post/${post.id}`)}
+                  onComment={() => router.push(`/post/${post.id}`)}
+                />
+              ))}
+
+              {/* SUGGESTED POSTS SEPARATOR & FEED */}
+              {isReadOnly && suggestedPosts.length > 0 && activeTab === 'posts' && (
+                <div className="pt-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <div className="flex items-center gap-4 mb-6 opacity-60">
+                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                    <div className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Suggested from the Cosmos</div>
+                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {suggestedPosts.map(post => (
+                      <PostCard
+                        key={`suggested-${post.id}`}
+                        post={post}
+                        currentUser={currentUser}
+                        onClick={() => router.push(`/post/${post.id}`)}
+                        onComment={() => router.push(`/post/${post.id}`)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="text-center py-8">
+                    <Button variant="ghost" className="text-zinc-500 hover:text-white hover:bg-white/5 rounded-full text-xs uppercase tracking-widest" onClick={() => router.push('/')}>
+                      View Global Feed
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* EMPTY STATE */}
+              {userPosts.length === 0 && (!isReadOnly || suggestedPosts.length === 0) && (
                 <div className="text-center py-24 border border-dashed border-white/10 rounded-[32px] bg-white/5">
                   <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Grid className="text-gray-500" />

@@ -3,19 +3,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, Hash, Bell, Search,
-  Smile, Send, Users, Gift, Sticker, PlusCircle
+  Smile, Send, Users, Gift, Sticker, PlusCircle, Heart
 } from 'lucide-react';
-import { type User, type Post } from "@/lib/storage"
+import { type User, type Post, storage } from "@/lib/storage"
 import LiveBackground from "@/components/live-background";
+import { getThemeForTopic, TopicTheme } from "@/lib/topic-themes";
 
 /* --- CUSTOM COMPONENT: COMPACT CHAT MESSAGE --- */
 interface ChatMessageProps {
   post: Post;
   onUserClick: (user: any) => void;
   currentUser: User;
+  theme: TopicTheme;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUser }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUser, theme }) => {
   const isMe = post.userId === currentUser.id;
 
   return (
@@ -23,23 +25,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ post, onUserClick, currentUse
       {!isMe && (
         <div
           onClick={(e) => { e.stopPropagation(); onUserClick(post); }}
-          className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0 mr-2 cursor-pointer self-end mb-1"
+          className={`w-8 h-8 rounded-full bg-opacity-20 border border-opacity-30 flex items-center justify-center text-xs font-bold shrink-0 mr-2 cursor-pointer self-end mb-1 ${theme.primary.replace('text-', 'bg-').replace('400', '500') + '/20'} ${theme.primary.replace('text-', 'border-').replace('400', '500') + '/30'} ${theme.primary}`}
         >
           {post.userId ? post.userId[0].toUpperCase() : '?'}
         </div>
       )}
 
       <div className={`relative max-w-[75%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm break-words ${isMe
-        ? 'bg-indigo-600 text-white rounded-br-sm'
+        ? `${theme.bubbleSelf} rounded-br-sm`
         : 'bg-[#1f1f22] text-zinc-100 rounded-bl-sm border border-white/5'
         }`}>
         {!isMe && (
-          <div className="text-[10px] font-bold text-indigo-400 mb-1 opacity-80">{post.userId}</div>
+          <div className={`text-[10px] font-bold mb-1 opacity-80 ${theme.primary}`}>{post.userId}</div>
         )}
 
         {post.content}
 
-        <div className={`text-[9px] mt-1 text-right font-medium tracking-wide opacity-60 ${isMe ? 'text-indigo-200' : 'text-zinc-500'}`}>
+        <div className={`text-[9px] mt-1 text-right font-medium tracking-wide opacity-60 ${isMe ? 'text-white/70' : 'text-zinc-500'}`}>
           {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
@@ -56,7 +58,38 @@ interface TopicDetailProps {
 export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailProps) {
   const [inputValue, setInputValue] = useState("");
   const [posts, setPosts] = useState<Post[]>([])
+  const [isFollowed, setIsFollowed] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get Dynamic Theme
+  const theme = getThemeForTopic(topic.name);
+
+  // Initialize Follow State
+  useEffect(() => {
+    if (currentUser?.followedTopics?.includes(topic.name)) {
+      setIsFollowed(true)
+    }
+  }, [currentUser, topic.name])
+
+  // Toggle Follow Logic
+  const toggleFollow = () => {
+    const newStatus = !isFollowed
+    setIsFollowed(newStatus)
+
+    // Update Local Storage
+    const updatedUser = { ...currentUser }
+    if (!updatedUser.followedTopics) updatedUser.followedTopics = []
+
+    if (newStatus) {
+      if (!updatedUser.followedTopics.includes(topic.name)) {
+        updatedUser.followedTopics.push(topic.name)
+      }
+    } else {
+      updatedUser.followedTopics = updatedUser.followedTopics.filter(t => t !== topic.name)
+    }
+
+    storage.setCurrentUser(updatedUser)
+  }
 
   // Fetch Logic
   useEffect(() => {
@@ -131,6 +164,7 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
             avatar: currentUser.avatar_initials || currentUser.username[0],
             tags: [topic.name],
             isBoosted: false,
+            // @ts-ignore
             isLikedByUser: false
           }
 
@@ -161,20 +195,29 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
               <ArrowLeft size={22} />
             </button>
 
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg bg-gradient-to-br ${theme.gradient}`}>
               {topic.name[0]}
             </div>
 
             <div>
               <div className="font-bold text-lg text-white leading-tight">#{topic.name}</div>
-              <div className="text-xs text-indigo-400 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <div className={`text-xs font-medium flex items-center gap-1 ${theme.primary}`}>
+                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${theme.primaryBg.replace('bg-', 'bg-')}`}></span>
                 Frequency Active
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-zinc-400">
+            {/* FOLLOW BUTTON */}
+            <button
+              onClick={toggleFollow}
+              className={`p-2 rounded-full transition-all duration-300 ${isFollowed ? `bg-white/5 ${theme.heartColor}` : 'hover:bg-white/10 hover:text-white'}`}
+              title={isFollowed ? "Remove from Orbit" : "Add to Orbit"}
+            >
+              <Heart size={20} fill={isFollowed ? "currentColor" : "none"} className={isFollowed ? "animate-pulse" : ""} />
+            </button>
+
             <button className="p-2 hover:bg-white/10 rounded-full hover:text-white transition-colors">
               <Search size={20} />
             </button>
@@ -197,45 +240,41 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
             </div>
           ) : (
             displayPosts.map((post) => (
-              <ChatMessage key={post.id} post={post} onUserClick={() => { }} currentUser={currentUser} />
+              <ChatMessage key={post.id} post={post} onUserClick={() => { }} currentUser={currentUser} theme={theme} />
             ))
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* --- 3. INPUT AREA (Fixed Bottom) --- */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#050505] p-3 pb-[env(safe-area-inset-bottom)] z-50 border-t border-white/5 md:absolute md:bottom-0 md:bg-transparent md:border-none md:pb-6">
-        <div className="flex items-end gap-2 max-w-4xl mx-auto">
-          {/* Plus Icon (Optional, keeping it clean as requested) */}
-          {/* <button className="p-3 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full mb-0.5">
-             <PlusCircle size={24} />
-           </button> */}
+      {/* --- 3. INPUT AREA --- */}
+      <div className="p-3 md:p-4 bg-[#050505] border-t border-white/5 relative z-10 pb-safe-bottom">
+        <div className="bg-[#1a1a1c] border border-white/5 rounded-3xl flex items-center px-2 py-2 shadow-lg w-full max-w-3xl mx-auto">
+          <button className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors">
+            <PlusCircle size={22} />
+          </button>
 
-          <div className="flex-1 bg-[#1a1a1a] rounded-[24px] flex items-center border border-white/5 focus-within:border-white/20 transition-colors min-h-[50px]">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Message..."
-              className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none text-[16px] px-5 py-3.5 max-h-32"
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            />
-          </div>
+          <input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Transmit signal..."
+            className="flex-1 bg-transparent text-white placeholder-zinc-500 outline-none px-3 font-medium text-[15px]"
+          />
+
+          <button className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors">
+            <Sticker size={20} />
+          </button>
 
           <button
             onClick={handleSend}
             disabled={!inputValue.trim()}
-            className={`w-[50px] h-[50px] rounded-full flex items-center justify-center transition-all duration-300 shrink-0 border border-transparent bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] ${inputValue.trim()
-              ? 'opacity-100 hover:scale-110 active:scale-95 hover:shadow-[0_0_30px_rgba(99,102,241,0.8)] cursor-pointer'
-              : 'opacity-50 grayscale scale-100 shadow-none cursor-not-allowed'
+            className={`p-2.5 rounded-full ml-1 transition-all ${inputValue.trim()
+              ? `${theme.primaryBg} text-white hover:brightness-110 shadow-lg scale-100`
+              : 'bg-white/5 text-zinc-600 scale-95'
               }`}
           >
-            <Send
-              size={22}
-              className={`transition-all duration-300 ${inputValue.trim() ? "translate-x-0.5 -translate-y-0.5 scale-110" : ""}`}
-              fill="currentColor"
-            />
+            <Send size={18} fill="currentColor" />
           </button>
         </div>
       </div>
@@ -243,5 +282,3 @@ export default function TopicDetail({ topic, currentUser, onBack }: TopicDetailP
     </div>
   );
 }
-
-

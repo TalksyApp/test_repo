@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import { Button } from "@/components/ui/button"
 import { Share2, MapPin, Calendar, Cake } from "lucide-react"
 
